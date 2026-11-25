@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useRef } from 'react';
 
-export default function MapComponent({ lat, lng, name, requests, volunteers, onMapClick, selectedLocation, routeCoordinates }) {
+export default function MapComponent({ lat, lng, name, requests, volunteers, onMapClick, selectedLocation, routeCoordinates, smsAlerts = [] }) {
   const mapContainerRef = useRef(null);
   const mapRef = useRef(null);
   const markersRef = useRef([]);
@@ -114,6 +114,64 @@ export default function MapComponent({ lat, lng, name, requests, volunteers, onM
       markersRef.current.push(volMarker);
     });
 
+    // 5.5 Add SurakshaSetu SMS Distress Signal Markers
+    if (Array.isArray(smsAlerts)) {
+      smsAlerts.forEach((alert) => {
+        const rawMsg = alert['RAW MESSAGE'] ?? alert['Raw Message'] ?? alert.rawMessage ?? '';
+        const fromPhone = alert.FROM ?? alert.From ?? 'Unknown';
+        const timestamp = alert.TIMESTAMP ?? alert.Timestamp ?? '';
+
+        let alertLat = parseFloat(alert.LATITUDE ?? alert.Latitude);
+        let alertLng = parseFloat(alert.LONGITUDE ?? alert.Longitude);
+
+        // Fallback: If coordinates aren't numbers or are 0, try to parse from SurakshaSetu#SOS#<lat>,<lng>#<note>
+        if ((isNaN(alertLat) || isNaN(alertLng) || (alertLat === 0 && alertLng === 0)) && typeof rawMsg === 'string' && rawMsg.includes('SurakshaSetu#SOS#')) {
+          const match = rawMsg.match(/SurakshaSetu#SOS#\s*([-\d.]+)\s*,\s*([-\d.]+)/);
+          if (match) {
+            alertLat = parseFloat(match[1]);
+            alertLng = parseFloat(match[2]);
+          }
+        }
+
+        if (!isNaN(alertLat) && !isNaN(alertLng) && (alertLat !== 0 || alertLng !== 0)) {
+          const isStructured = typeof rawMsg === 'string' && rawMsg.includes('SurakshaSetu#SOS#');
+          const smsIcon = L.divIcon({
+            className: 'sms-distress-marker',
+            html: `<div style="background: radial-gradient(circle at 30% 30%, ${isStructured ? '#ea580c, #c2410c' : '#7c3aed, #5b21b6'}); width: 28px; height: 28px; border-radius: 50%; border: 2.5px solid white; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 12px ${isStructured ? 'rgba(234, 88, 12, 0.9)' : 'rgba(124, 58, 237, 0.9)'};"><i class="fas ${isStructured ? 'fa-satellite-dish' : 'fa-comment-sms'}" style="color: white; font-size: 11px;"></i></div>`,
+            iconSize: [28, 28]
+          });
+
+          let timeFormatted = 'N/A';
+          if (timestamp) {
+            try {
+              const d = new Date(timestamp);
+              timeFormatted = isNaN(d.getTime()) ? String(timestamp) : d.toLocaleTimeString();
+            } catch {
+              timeFormatted = String(timestamp);
+            }
+          }
+
+          const smsMarker = L.marker([alertLat, alertLng], { icon: smsIcon })
+            .addTo(map)
+            .bindPopup(`
+              <div style="font-family: inherit; font-size: 13px; line-height: 1.5; min-width: 180px;">
+                <div style="font-weight: 700; color: ${isStructured ? '#ea580c' : '#7c3aed'}; margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
+                  <i class="fas ${isStructured ? 'fa-satellite-dish' : 'fa-comment-dots'}"></i>
+                  ${isStructured ? 'SurakshaSetu SOS Signal' : 'Off-Grid SMS Distress'}
+                </div>
+                <div><b>From:</b> +${fromPhone}</div>
+                <div><b>Time:</b> ${timeFormatted}</div>
+                <div><b>Coordinates:</b> ${alertLat.toFixed(4)}, ${alertLng.toFixed(4)}</div>
+                <div style="margin-top: 4px; padding: 4px 6px; background: #f8fafc; border-radius: 4px; border: 1px solid #e2e8f0; font-size: 12px; color: #334155;">
+                  <b>Message:</b> ${rawMsg || 'N/A'}
+                </div>
+              </div>
+            `);
+          markersRef.current.push(smsMarker);
+        }
+      });
+    }
+
     // 6. Setup map click handler to emit location
     const onMapClicked = (e) => {
       if (onMapClick) {
@@ -125,7 +183,7 @@ export default function MapComponent({ lat, lng, name, requests, volunteers, onM
     return () => {
       map.off('click', onMapClicked);
     };
-  }, [lat, lng, name, requests, volunteers, onMapClick]);
+  }, [lat, lng, name, requests, volunteers, onMapClick, smsAlerts]);
 
   // Standard OSM Map Tile Layer
   useEffect(() => {

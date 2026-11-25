@@ -3,6 +3,7 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import dynamic from 'next/dynamic';
 
 const MapComponent = dynamic(() => import('./MapComponent'), { ssr: false });
+import SurakshaSetuSMSPanel from '@/components/SurakshaSetuSMSPanel';
 
 const CREDENTIALS = {
   admin: { username: "1", password: "1", role: "Admin", fullName: "System Admin" },
@@ -519,10 +520,8 @@ export default function Home() {
   const [adminPhone, setAdminPhone] = useState('');
   const [adminDescription, setAdminDescription] = useState('');
 
-  // SMS Google Sheets Integration
+  // SurakshaSetu Off-Grid SMS Alerts
   const [smsData, setSmsData] = useState([]);
-  const [isSmsLoading, setIsSmsLoading] = useState(false);
-  const [smsError, setSmsError] = useState(null);
 
   // Volunteer Join Inputs
   const [volName, setVolName] = useState('');
@@ -738,72 +737,7 @@ export default function Home() {
     };
   }, []);
 
-  // 2.5 Live SMS Data Polling (Google Sheets)
-  useEffect(() => {
-    const fetchSmsData = async () => {
-      setIsSmsLoading(true);
-      setSmsError(null);
-      try {
-        const response = await fetch('https://docs.google.com/spreadsheets/d/10Tq6CAz9CBBOapmcSk9QXoVxuX0B7xmXxDE74F2CJpY/export?format=csv');
-        if (!response.ok) throw new Error('Failed to fetch SMS data');
-        const text = await response.text();
-
-        const rows = [];
-        let currentRow = [];
-        let currentCell = '';
-        let inQuotes = false;
-
-        for (let i = 0; i < text.length; i++) {
-          const char = text[i];
-          if (char === '"') {
-            if (inQuotes && text[i + 1] === '"') {
-              currentCell += '"';
-              i++;
-            } else {
-              inQuotes = !inQuotes;
-            }
-          } else if (char === ',' && !inQuotes) {
-            currentRow.push(currentCell.trim());
-            currentCell = '';
-          } else if (char === '\n' && !inQuotes) {
-            currentRow.push(currentCell.trim());
-            rows.push(currentRow);
-            currentRow = [];
-            currentCell = '';
-          } else if (char !== '\r' || inQuotes) {
-            currentCell += char;
-          }
-        }
-        if (currentCell !== '' || currentRow.length > 0) {
-          currentRow.push(currentCell.trim());
-          rows.push(currentRow);
-        }
-
-        if (rows.length > 0) {
-          const headers = rows[0];
-          const data = [];
-          for (let i = 1; i < rows.length; i++) {
-            if (rows[i].length === 0 || (rows[i].length === 1 && !rows[i][0])) continue;
-            const obj = {};
-            headers.forEach((header, index) => {
-              obj[header] = rows[i][index] || '';
-            });
-            data.push(obj);
-          }
-          setSmsData(data);
-        }
-      } catch (err) {
-        console.error("SMS Fetch Error:", err);
-        setSmsError(err.message);
-      } finally {
-        setIsSmsLoading(false);
-      }
-    };
-
-    fetchSmsData();
-    const interval = setInterval(fetchSmsData, 5000); // 5 seconds
-    return () => clearInterval(interval);
-  }, []);
+  // 2.5 SurakshaSetu SMS live feed is managed via SurakshaSetuSMSPanel component
 
   // 3. API Requests & Helper Functions
   function fetchWeather(lat, lng) {
@@ -1975,6 +1909,7 @@ export default function Home() {
                   onMapClick={handleMapClick}
                   selectedLocation={selectedLocation}
                   routeCoordinates={routeCoordinates}
+                  smsAlerts={smsData}
                 />
               </div>
             </div>
@@ -2200,41 +2135,8 @@ export default function Home() {
               {/* Left Column: Live SMS Requests and Volunteers */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
 
-                {/* Live SMS Data from Google Sheets */}
-                <div className="section" style={{ margin: 0 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
-                    <h2>Live SMS Requests (Google Sheets Sync)</h2>
-                    {isSmsLoading && <span className="status-badge status-partial">Syncing...</span>}
-                  </div>
-                  {smsError ? (
-                    <div className="alert alert-danger" style={{ color: '#d32f2f', padding: '10px', background: '#ffebee', borderRadius: '5px' }}>Error loading SMS data: {smsError}</div>
-                  ) : (
-                    <div className="table-container">
-                      <table>
-                        <thead>
-                          <tr>
-                            <th>Category</th>
-                            <th>Quantity</th>
-                            <th>Location</th>
-                            <th>Notes</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {smsData.length > 0 ? smsData.map((row, idx) => (
-                            <tr key={idx}>
-                              <td>{row.Category || 'N/A'}</td>
-                              <td>{row.Quantity || 'N/A'}</td>
-                              <td>{row.Location || 'N/A'}</td>
-                              <td style={{ whiteSpace: 'pre-wrap', maxWidth: '300px' }}>{row.Notes || 'N/A'}</td>
-                            </tr>
-                          )) : (
-                            <tr><td colSpan="4" style={{ textAlign: 'center' }}>No live SMS requests found</td></tr>
-                          )}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
-                </div>
+                {/* SurakshaSetu Off-Grid SMS Gateway */}
+                <SurakshaSetuSMSPanel onAlertsUpdate={setSmsData} />
 
                 {/* Volunteer Dispatch Grid */}
                 <div className="section" id="volunteerManagementSection" style={{ margin: 0 }}>
@@ -2284,7 +2186,7 @@ export default function Home() {
                           <strong>Need:</strong> {selectedTriageRequest.resourceType} ({selectedTriageRequest.individualsAffected} affected)
                         </div>
                         <div style={{ fontSize: '12px', marginTop: '4px', fontStyle: 'italic', color: '#555' }}>
-                          "{selectedTriageRequest.description}"
+                          &quot;{selectedTriageRequest.description}&quot;
                         </div>
                       </div>
 
@@ -2631,6 +2533,7 @@ export default function Home() {
                     onMapClick={handleMapClick}
                     selectedLocation={selectedLocation}
                     routeCoordinates={routeCoordinates}
+                    smsAlerts={smsData}
                   />
                 </div>
               </div>
@@ -2715,6 +2618,11 @@ export default function Home() {
                 </form>
 
               </div>
+            </div>
+
+            {/* SurakshaSetu Off-Grid SMS Gateway */}
+            <div style={{ marginBottom: '24px' }}>
+              <SurakshaSetuSMSPanel onAlertsUpdate={setSmsData} />
             </div>
 
             {/* Weather / Sensors / Volunteers Accordions */}
