@@ -21,20 +21,19 @@ class SurakshaSetuApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Suraksha Setu',
+      title: 'Suraksha Setu (ಸುರಕ್ಷಾ ಸೇತು)',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF6D8B74),
-          primary: const Color(0xFF5F7161),
-          secondary: const Color(0xFF6D8B74),
-          background: const Color(0xFFEFEAD8),
+          seedColor: const Color(0xFF0284C7),
+          primary: const Color(0xFF0284C7),
+          secondary: const Color(0xFF0369A1),
           surface: Colors.white,
         ),
-        scaffoldBackgroundColor: const Color(0xFFF7F5F0),
+        scaffoldBackgroundColor: const Color(0xFFF8FAFC),
         useMaterial3: true,
         appBarTheme: const AppBarTheme(
-          backgroundColor: Color(0xFF5F7161),
+          backgroundColor: Color(0xFF0284C7),
           foregroundColor: Colors.white,
           elevation: 2,
         ),

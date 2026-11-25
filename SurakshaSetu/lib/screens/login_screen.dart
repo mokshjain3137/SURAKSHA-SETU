@@ -53,13 +53,13 @@ class _LoginScreenState extends State<LoginScreen>
     setState(() => _isLoading = true);
     await Future.delayed(const Duration(milliseconds: 600));
 
-    // Validate User credentials: ID = 1, Password = 1
-    if (id == '1' && password == '1') {
+    // Validate User credentials: ID = 1 or 2, Password = 1 or 2
+    if ((id == '1' || id == '2') && (password == '1' || password == '2')) {
       await StorageService.saveIsLoggedIn(true);
       await StorageService.saveIsAdmin(false); // Normal User access
-      await StorageService.saveUsername('User 1');
+      await StorageService.saveUsername('Citizen User $id');
       await StorageService.saveRole('Victim'); // Default role is Victim
-      await StorageService.saveDeviceName('User_1');
+      await StorageService.saveDeviceName('Citizen_Node_$id');
 
       if (mounted) {
         Navigator.pushReplacement(
@@ -85,11 +85,11 @@ class _LoginScreenState extends State<LoginScreen>
     setState(() => _isLoading = true);
     await Future.delayed(const Duration(milliseconds: 600));
 
-    // Validate Admin credentials: ID = 2, Password = 2
-    if (id == '2' && password == '2') {
+    // Validate Admin credentials: ID = 1 or 2, Password = 1 or 2
+    if ((id == '1' || id == '2') && (password == '1' || password == '2')) {
       await StorageService.saveIsLoggedIn(true);
       await StorageService.saveIsAdmin(true); // Admin Command access
-      await StorageService.saveUsername('ADMIN');
+      await StorageService.saveUsername('HQ COMMAND');
       await StorageService.saveRole('Command'); // Starts in Command role
       await StorageService.saveDeviceName('HQ_COMMAND');
 
@@ -101,7 +101,7 @@ class _LoginScreenState extends State<LoginScreen>
       }
     } else {
       setState(() => _isLoading = false);
-      _showErrorSnackBar('Invalid Admin Credentials. Use ID: 2, Code: 2');
+      _showErrorSnackBar('Invalid Admin Credentials. Use ID: 1 or 2, Code: 1 or 2');
     }
   }
 
@@ -118,7 +118,7 @@ class _LoginScreenState extends State<LoginScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F5F0),
+      backgroundColor: const Color(0xFFF8FAFC),
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -130,13 +130,13 @@ class _LoginScreenState extends State<LoginScreen>
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF5F7161).withOpacity(0.12),
+                    color: const Color(0xFF0284C7).withOpacity(0.12),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
                     Icons.security_rounded,
                     size: 64,
-                    color: Color(0xFF5F7161),
+                    color: Color(0xFF0284C7),
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -146,14 +146,15 @@ class _LoginScreenState extends State<LoginScreen>
                     fontSize: 28,
                     fontWeight: FontWeight.bold,
                     letterSpacing: 2,
-                    color: Color(0xFF5F7161),
+                    color: Color(0xFF0F172A),
                   ),
                 ),
                 const Text(
-                  'Disaster Mesh Communication Network',
+                  'ಸುರಕ್ಷಾ ಸೇತು • Disaster Mesh Network',
                   style: TextStyle(
-                    fontSize: 13,
-                    color: Colors.grey,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF0284C7),
                   ),
                 ),
                 const SizedBox(height: 32),
@@ -165,9 +166,9 @@ class _LoginScreenState extends State<LoginScreen>
                     borderRadius: BorderRadius.circular(16),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.04),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
+                        color: Colors.black.withOpacity(0.06),
+                        blurRadius: 15,
+                        offset: const Offset(0, 6),
                       ),
                     ],
                   ),
@@ -177,12 +178,12 @@ class _LoginScreenState extends State<LoginScreen>
                       // Tab Bar for switching roles
                       TabBar(
                         controller: _tabController,
-                        labelColor: const Color(0xFF5F7161),
+                        labelColor: const Color(0xFF0284C7),
                         unselectedLabelColor: Colors.grey,
-                        indicatorColor: const Color(0xFF5F7161),
+                        indicatorColor: const Color(0xFF0284C7),
                         indicatorSize: TabBarIndicatorSize.tab,
                         tabs: const [
-                          Tab(text: 'User / Citizen'),
+                          Tab(text: 'Citizen / Victim'),
                           Tab(text: 'Command Admin'),
                         ],
                       ),
@@ -267,7 +268,7 @@ class _LoginScreenState extends State<LoginScreen>
         ElevatedButton(
           onPressed: _isLoading ? null : _loginAsUser,
           style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF5F7161),
+            backgroundColor: const Color(0xFF0284C7),
             foregroundColor: Colors.white,
             padding: const EdgeInsets.symmetric(vertical: 14),
             shape:
@@ -327,7 +328,7 @@ class _LoginScreenState extends State<LoginScreen>
         ElevatedButton(
           onPressed: _isLoading ? null : _loginAsAdmin,
           style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF6D8B74),
+            backgroundColor: const Color(0xFF0369A1),
             foregroundColor: Colors.white,
             padding: const EdgeInsets.symmetric(vertical: 14),
             shape:

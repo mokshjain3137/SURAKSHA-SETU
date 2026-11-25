@@ -81,10 +81,10 @@ class StorageService {
     await _settingsBox.put('serverUrl', url);
   }
 
-  // Get server URL (defaults to Mac local dev IP)
+  // Get server URL (defaults to Live Laptop HQ server IP)
   static String getServerUrl() {
     return _settingsBox.get('serverUrl',
-        defaultValue: 'http://172.20.10.2:3000');
+        defaultValue: 'http://10.208.78.150:3000');
   }
 
   // Save login status

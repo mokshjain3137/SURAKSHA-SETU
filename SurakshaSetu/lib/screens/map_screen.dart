@@ -265,14 +265,14 @@ class _MapScreenState extends State<MapScreen> {
                       else if (_isCaching)
                         const Text(
                           'Caching...',
-                          style: TextStyle(color: Colors.cyan, fontSize: 11, fontWeight: 'bold'),
+                          style: TextStyle(color: Colors.cyan, fontSize: 11, fontWeight: FontWeight.bold),
                         )
                       else
                         const Row(
                           children: [
                             Icon(Icons.check_circle, color: Colors.green, size: 14),
                             SizedBox(width: 4),
-                            Text('Cache Offline', style: TextStyle(color: Colors.green, fontSize: 10, fontWeight: 'bold')),
+                            Text('Cache Offline', style: TextStyle(color: Colors.green, fontSize: 10, fontWeight: FontWeight.bold)),
                           ],
                         )
                     ],

@@ -48,7 +48,7 @@ class _RelayScreenState extends State<RelayScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('SOS ${sos.id} decision updated to: $decision'),
-        backgroundColor: const Color(0xFF6D8B74),
+        backgroundColor: const Color(0xFF0369A1),
       ),
     );
   }
@@ -69,8 +69,8 @@ class _RelayScreenState extends State<RelayScreen> {
           _buildMeshStatusBanner(),
 
           TabBar(
-            labelColor: const Color(0xFF5F7161),
-            indicatorColor: const Color(0xFF6D8B74),
+            labelColor: const Color(0xFF0284C7),
+            indicatorColor: const Color(0xFF0369A1),
             tabs: [
               Tab(text: 'Pending Verification (${pendingRequests.length})'),
               Tab(text: 'Verified History (${decidedRequests.length})'),
@@ -97,7 +97,7 @@ class _RelayScreenState extends State<RelayScreen> {
         String statusText = "Mesh Offline";
 
         if (status == MeshConnectionStatus.connected) {
-          bannerColor = const Color(0xFF6D8B74);
+          bannerColor = const Color(0xFF0369A1);
           statusText =
               "Mesh Connected: ${WifiService.instance.connectedPeers.length} active nodes";
         } else if (status == MeshConnectionStatus.advertising) {
@@ -268,7 +268,7 @@ class _RelayScreenState extends State<RelayScreen> {
                           onPressed: () => _updateDecision(
                               sos, 'APPROVED', 'COMMAND_PENDING'),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF6D8B74),
+                            backgroundColor: const Color(0xFF0369A1),
                             foregroundColor: Colors.white,
                             shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(8)),
@@ -300,7 +300,7 @@ class _RelayScreenState extends State<RelayScreen> {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF5F7161).withOpacity(0.1),
+                          color: const Color(0xFF0284C7).withOpacity(0.1),
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text(

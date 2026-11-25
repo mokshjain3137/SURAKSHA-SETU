@@ -149,7 +149,7 @@ class _CommandScreenState extends State<CommandScreen> {
                 );
               },
               style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF6D8B74)),
+                  backgroundColor: const Color(0xFF0369A1)),
               child: const Text('DISPATCH TEAM'),
             ),
           ],
@@ -195,8 +195,8 @@ class _CommandScreenState extends State<CommandScreen> {
             child: Column(
               children: [
                 TabBar(
-                  labelColor: const Color(0xFF5F7161),
-                  indicatorColor: const Color(0xFF6D8B74),
+                  labelColor: const Color(0xFF0284C7),
+                  indicatorColor: const Color(0xFF0369A1),
                   tabs: [
                     Tab(text: 'Pending Dispatch (${pendingDispatch.length})'),
                     Tab(
@@ -229,7 +229,7 @@ class _CommandScreenState extends State<CommandScreen> {
 
     return Container(
       padding: const EdgeInsets.all(16),
-      color: const Color(0xFF5F7161).withOpacity(0.08),
+      color: const Color(0xFF0284C7).withOpacity(0.08),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
@@ -413,7 +413,7 @@ class _CommandScreenState extends State<CommandScreen> {
                         child: ElevatedButton.icon(
                           onPressed: () => _dispatchRescue(sos),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF6D8B74),
+                            backgroundColor: const Color(0xFF0369A1),
                             foregroundColor: Colors.white,
                             shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(8)),
@@ -447,7 +447,7 @@ class _CommandScreenState extends State<CommandScreen> {
                           _dispatchRescue(sos);
                         },
                         child: const Text('Update ETA',
-                            style: TextStyle(color: Color(0xFF5F7161))),
+                            style: TextStyle(color: Color(0xFF0284C7))),
                       )
                     ],
                   ),

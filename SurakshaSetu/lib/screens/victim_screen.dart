@@ -307,7 +307,7 @@ class _VictimScreenState extends State<VictimScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('🚨 SOS Alert ${newSOS.id} Broad-casted Offline!'),
-        backgroundColor: const Color(0xFF5F7161),
+        backgroundColor: const Color(0xFF0284C7),
       ),
     );
   }
@@ -489,7 +489,7 @@ class _VictimScreenState extends State<VictimScreen> {
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
-                            color: Color(0xFF5F7161),
+                            color: Color(0xFF0284C7),
                           ),
                         ),
                       ],
@@ -636,11 +636,11 @@ class _VictimScreenState extends State<VictimScreen> {
                           label: Text(item),
                           selected: isSelected,
                           selectedColor:
-                              const Color(0xFF6D8B74).withOpacity(0.3),
-                          checkmarkColor: const Color(0xFF5F7161),
+                              const Color(0xFF0369A1).withOpacity(0.3),
+                          checkmarkColor: const Color(0xFF0284C7),
                           labelStyle: TextStyle(
                             color: isSelected
-                                ? const Color(0xFF5F7161)
+                                ? const Color(0xFF0284C7)
                                 : Colors.black87,
                             fontWeight: isSelected
                                 ? FontWeight.bold
@@ -696,7 +696,7 @@ class _VictimScreenState extends State<VictimScreen> {
             style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
-                color: Color(0xFF5F7161)),
+                color: Color(0xFF0284C7)),
           ),
           const SizedBox(height: 8),
 
@@ -733,7 +733,7 @@ class _VictimScreenState extends State<VictimScreen> {
         IconData icon = Icons.offline_bolt_outlined;
 
         if (status == MeshConnectionStatus.connected) {
-          bannerColor = const Color(0xFF6D8B74);
+          bannerColor = const Color(0xFF0369A1);
           statusText =
               "Mesh Active: ${WifiService.instance.connectedPeers.length} Peers Connectable";
           icon = Icons.insights;
@@ -929,7 +929,7 @@ class _VictimScreenState extends State<VictimScreen> {
         CircleAvatar(
           radius: 12,
           backgroundColor:
-              active ? const Color(0xFF6D8B74) : Colors.grey.shade300,
+              active ? const Color(0xFF0369A1) : Colors.grey.shade300,
           child: Icon(
             active ? Icons.check : Icons.circle,
             size: active ? 14 : 6,
@@ -942,7 +942,7 @@ class _VictimScreenState extends State<VictimScreen> {
           style: TextStyle(
             fontSize: 10,
             fontWeight: active ? FontWeight.bold : FontWeight.normal,
-            color: active ? const Color(0xFF5F7161) : Colors.grey,
+            color: active ? const Color(0xFF0284C7) : Colors.grey,
           ),
         ),
       ],
@@ -953,7 +953,7 @@ class _VictimScreenState extends State<VictimScreen> {
     return Expanded(
       child: Container(
         height: 2,
-        color: active ? const Color(0xFF6D8B74) : Colors.grey.shade300,
+        color: active ? const Color(0xFF0369A1) : Colors.grey.shade300,
       ),
     );
   }
