@@ -141,7 +141,7 @@ class _LoginScreenState extends State<LoginScreen>
                 ),
                 const SizedBox(height: 16),
                 const Text(
-                  'RESQ LINK',
+                  'SURAKSHA SETU',
                   style: TextStyle(
                     fontSize: 28,
                     fontWeight: FontWeight.bold,

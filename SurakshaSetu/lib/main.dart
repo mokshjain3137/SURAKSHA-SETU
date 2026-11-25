@@ -12,16 +12,16 @@ import 'screens/login_screen.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await StorageService.init();
-  runApp(const ResQLinkApp());
+  runApp(const SurakshaSetuApp());
 }
 
-class ResQLinkApp extends StatelessWidget {
-  const ResQLinkApp({super.key});
+class SurakshaSetuApp extends StatelessWidget {
+  const SurakshaSetuApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Resqlink',
+      title: 'Suraksha Setu',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
@@ -284,7 +284,7 @@ class _DashboardShellState extends State<DashboardShell> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              'ResQ Link Mesh',
+              'Suraksha Setu Mesh',
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
             ),
             Text(

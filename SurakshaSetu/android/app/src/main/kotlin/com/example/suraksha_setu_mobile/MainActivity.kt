@@ -1,4 +1,4 @@
-package com.example.resqlink_mobile
+package com.example.suraksha_setu_mobile
 
 import io.flutter.embedding.android.FlutterActivity
 

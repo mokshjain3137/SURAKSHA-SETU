@@ -1,9 +1,9 @@
-# 📡 ResQLink: Hybrid LoRa-Based Disaster Monitoring & Communication System
+# 📡 Suraksha Setu: Hybrid LoRa-Based Disaster Monitoring & Communication System
 
 > **IEEE Region 10 Humanitarian Technology Activities (HTA) Makers DIY Project Competition Entry**
 > **WINNERS PES HACKATHON**
 > 
-> ResQLink is a low-cost, open-source, and fully off-grid disaster resilience ecosystem covering disaster monitoring, emergency communication, and tactical rescue dispatching.
+> Suraksha Setu is a low-cost, open-source, and fully off-grid disaster resilience ecosystem covering disaster monitoring, emergency communication, and tactical rescue dispatching.
 
 ---
 
@@ -43,9 +43,9 @@
 
 ---
 
-## ⚡ The 3 Pillars of ResQLink
+## ⚡ The 3 Pillars of Suraksha Setu
 
-ResQLink addresses the entire disaster lifecycle through three operational modules:
+Suraksha Setu addresses the entire disaster lifecycle through three operational modules:
 
 ### 1. 🌊 Disaster Monitoring & Early Warning (Before)
 *   **Flood Alarm Nodes:** Deployed near rivers and dams. Combines ESP32, ultrasonic water depth sensors, rain gauges, and solar-charged batteries.
@@ -65,17 +65,17 @@ ResQLink addresses the entire disaster lifecycle through three operational modul
 
 ## 📂 Repository Structure
 
-*   [src/](file:///Users/bharathkumara/Desktop/RESQLINK-main/src) — Web Command Dashboard (Next.js & Leaflet Maps)
-*   [Resqlink/](file:///Users/bharathkumara/Desktop/RESQLINK-main/Resqlink) — Flutter Offline Mobile Mesh Application
-*   [hardware/](file:///Users/bharathkumara/Desktop/RESQLINK-main/hardware) — ESP32 firmware (`espcode.c++`), circuit diagrams, and system layouts
-*   [IEEE_SUBMISSION_GUIDE.md](file:///Users/bharathkumara/Desktop/RESQLINK-main/IEEE_SUBMISSION_GUIDE.md) — Step-by-step IEEE Region 10 competition template & Bill of Materials
-*   [TECHNOLOGY_INNOVATIONS.md](file:///Users/bharathkumara/Desktop/RESQLINK-main/TECHNOLOGY_INNOVATIONS.md) — Implementation guides for LoRa mesh, deep sleep, and edge command servers
+*   [src/](file:///Users/bharathkumara/Desktop/SURAKSHA_SETU-main/src) — Web Command Dashboard (Next.js & Leaflet Maps)
+*   [SurakshaSetu/](file:///Users/bharathkumara/Desktop/SURAKSHA_SETU-main/SurakshaSetu) — Flutter Offline Mobile Mesh Application
+*   [hardware/](file:///Users/bharathkumara/Desktop/SURAKSHA_SETU-main/hardware) — ESP32 firmware (`espcode.c++`), circuit diagrams, and system layouts
+*   [IEEE_SUBMISSION_GUIDE.md](file:///Users/bharathkumara/Desktop/SURAKSHA_SETU-main/IEEE_SUBMISSION_GUIDE.md) — Step-by-step IEEE Region 10 competition template & Bill of Materials
+*   [TECHNOLOGY_INNOVATIONS.md](file:///Users/bharathkumara/Desktop/SURAKSHA_SETU-main/TECHNOLOGY_INNOVATIONS.md) — Implementation guides for LoRa mesh, deep sleep, and edge command servers
 
 ---
 
 ## 🏆 IEEE Competition Theme Alignment
 
-| Challenge Requirement | ResQLink Implementation | Status |
+| Challenge Requirement | Suraksha Setu Implementation | Status |
 | :--- | :--- | :--- |
 | **🌊 Flood Detection Alarms** | Ultrasonic depth monitoring + precipitation analysis + LoRa alert routing | **Implemented** |
 | **⛰️ Landslide Monitoring Networks** | MPU6050 seismic acceleration + soil saturation telemetry | **Implemented** |

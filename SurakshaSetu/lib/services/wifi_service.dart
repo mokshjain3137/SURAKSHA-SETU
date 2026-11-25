@@ -11,7 +11,7 @@ class WifiService {
   static final WifiService instance = WifiService._internal();
   WifiService._internal();
 
-  static const String serviceId = "com.resqlink.mesh";
+  static const String serviceId = "com.surakshasetu.mesh";
   static const Strategy strategy = Strategy.P2P_CLUSTER;
 
   // Active connections: endpointId -> PeerDetails

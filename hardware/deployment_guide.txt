@@ -1,5 +1,5 @@
 ========================================================================
-             RESQLINK DISASTER MONITORING NODE: DEPLOYMENT GUIDE
+             SURAKSHA SETU DISASTER MONITORING NODE: DEPLOYMENT GUIDE
 ========================================================================
 
 This guide documents the technical architecture, sensor integration, and
@@ -71,12 +71,12 @@ front-end panels:
 You can find all structural details and configurations duplicated inside
 the local workspace directory:
 
-📂 /Users/bharathkumara/Desktop/PROJECTS/RESQLINK/hardware
+📂 /Users/bharathkumara/Desktop/PROJECTS/SURAKSHA_SETU/hardware
  ├─ README.md        : Complete pinouts, operating voltage parameters,
  │                     alert matrices, and dynamic idle-throttling formulas.
  ├─ espcode.c++      : The complete physical low-level firmware program.
  └─ deployment_guide.txt : This deployment instructions index.
 
 ========================================================================
-                    RESQLINK DEPLOYMENT ENGINE V3
+                    SURAKSHA SETU DEPLOYMENT ENGINE V3
 ========================================================================

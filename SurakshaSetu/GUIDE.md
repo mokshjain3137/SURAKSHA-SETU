@@ -1,4 +1,4 @@
-# ResQ Link Offline Mesh Network - Hackathon Guide
+# Suraksha Setu Offline Mesh Network - Hackathon Guide
 
 This directory contains a complete Flutter mobile application designed to showcase a store-and-forward ad-hoc peer-to-peer mesh network for emergency distress signals.
 
@@ -15,7 +15,7 @@ The application operates completely offline without Wi-Fi routers, cellular inte
 ### 2. Installation
 Navigate to this directory and install dependencies:
 ```bash
-cd resqlink_mobile
+cd SurakshaSetu
 flutter pub get
 ```
 

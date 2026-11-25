@@ -195,7 +195,7 @@ class _MapScreenState extends State<MapScreen> {
                 urlTemplate:
                     'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
                 subdomains: const ['a', 'b', 'c'],
-                userAgentPackageName: 'com.resqlink.mesh',
+                userAgentPackageName: 'com.surakshasetu.mesh',
               ),
               PolylineLayer(
                 polylines: [

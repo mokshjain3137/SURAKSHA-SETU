@@ -1,5 +1,5 @@
 ================================================================================
-          RESQLINK MOBILE TIER: COMPREHENSIVE FLUTTER & ANDROID STUDIO
+          SURAKSHA SETU MOBILE TIER: COMPREHENSIVE FLUTTER & ANDROID STUDIO
                              TECHNICAL BLUEPRINT
 ================================================================================
 Document Version: 4.1
@@ -46,7 +46,7 @@ power grids—are frequently disabled or destroyed. This leaves victims stranded
 a means of signaling for rescue, and prevents emergency command centers from assessing 
 the scale of the crisis in real-time. 
 
-ResQLink addresses this critical vulnerability by introducing a multi-tiered, 
+Suraksha Setu addresses this critical vulnerability by introducing a multi-tiered, 
 resilient communications ecosystem. The system is divided into four distinct tiers:
   - Tier 1: IoT Hardware Stations (ESP32 microcontrollers reading temperature, 
     humidity, soil moisture, flood level, and seismic telemetry).
@@ -163,7 +163,7 @@ Key Tasks Performed in main.dart:
    void main() async {
      WidgetsFlutterBinding.ensureInitialized();
      await StorageService.init();
-     runApp(const ResQLinkApp());
+     runApp(const SurakshaSetuApp());
    }
    ```
 2. Application Styling System:
@@ -279,7 +279,7 @@ session layer, orchestrating background processes to establish connections and e
 data with neighboring nodes.
 
 Mesh Service Protocol Details:
-- Service Identifier: `"com.resqlink.mesh"` (Both discovering and advertising nodes 
+- Service Identifier: `"com.surakshasetu.mesh"` (Both discovering and advertising nodes 
   must share this ID to filter out other Nearby connections).
 - Connection Strategy: `Strategy.P2P_CLUSTER`. This topology allows nodes to connect 
   with multiple peers simultaneously. It forms a multi-directional cluster rather than a 
@@ -457,7 +457,7 @@ Store-and-Forward networking paradigm:
 --------------------------------------------------------------------------------
 4.2 P2P Cluster Connection Topology
 --------------------------------------------------------------------------------
-ResQLink configures the Google Nearby Connections API with `Strategy.P2P_CLUSTER`. 
+Suraksha Setu configures the Google Nearby Connections API with `Strategy.P2P_CLUSTER`. 
 Unlike `P2P_STAR` (where a central advertiser acts as a hub for multiple discoverers) 
 or `P2P_POINT_TO_POINT` (which allows only one-to-one connections), `P2P_CLUSTER` 
 permits any node to advertise and discover simultaneously. 
@@ -474,7 +474,7 @@ issues. For example, if Phone A updates a record's status to `RELAY_ACCEPTED` wh
 Phone B maintains the status as `RELAY_PENDING`, the network must determine which state 
 is correct.
 
-To resolve this, ResQLink implements a Timestamp Conflict Resolution Protocol:
+To resolve this, Suraksha Setu implements a Timestamp Conflict Resolution Protocol:
 - Every `SOS` object contains an ISO 8601 string field named `lastUpdated`.
 - Whenever a user modifies a record (e.g., a volunteer accepts an SOS, or HQ dispatches 
   rescue crews), the system generates a new `lastUpdated` timestamp.
@@ -497,7 +497,7 @@ To resolve this, ResQLink implements a Timestamp Conflict Resolution Protocol:
 In a mesh network, infinite propagation loops (where devices continuously exchange the 
 same data) can cause broadcast storms that exhaust device resources.
 
-ResQLink mitigates this through conditional replication:
+Suraksha Setu mitigates this through conditional replication:
 1. Synchronization triggers only when the local database state changes.
 2. When a payload is received, the system compares timestamps. If the incoming payload contains 
    no new or updated records, the local state is not updated, and no further data is sent:
@@ -524,7 +524,7 @@ The project's Android application layer is configured using Kotlin DSL (`build.g
 rather than Groovy. This improves build-script safety and autocompletion in Android Studio.
 
 Key configuration values:
-- Namespace: `com.example.resqlink_mobile`
+- Namespace: `com.example.suraksha_setu_mobile`
 - Compile SDK Version: Inherited from Flutter's global configuration (`flutter.compileSdkVersion`), 
   ensuring compatibility with modern Android API features.
 - Java Compatibility: Configured for Java 17, which is required by the modern Gradle 
@@ -601,7 +601,7 @@ Key Build Parameters:
 
 The compilation process outputs a optimized application package (APK) located at 
 `build/app/outputs/flutter-apk/app-release.apk`. In this repository, the pre-built 
-binary is located at `/Users/bharathkumara/Desktop/PROJECTS/RESQLINK/resqlink_mobile_arm64.apk`.
+binary is located at `/Users/bharathkumara/Desktop/PROJECTS/SURAKSHA_SETU/suraksha_setu_mobile_arm64.apk`.
 
 ================================================================================
 6. BILINGUAL TRANSLATION & ACCESSIBILITY
@@ -627,7 +627,7 @@ using three physical Android devices.
 --------------------------------------------------------------------------------
 7.1 Preparation Steps
 --------------------------------------------------------------------------------
-1. Install the APK (`resqlink_mobile_arm64.apk`) on three Android smartphones.
+1. Install the APK (`suraksha_setu_mobile_arm64.apk`) on three Android smartphones.
 2. Open the app on each device and assign their roles:
    - Phone A: Set to **Victim** (Device Name: `Victim Node`)
    - Phone B: Set to **Relay** (Device Name: `Relay Node`)

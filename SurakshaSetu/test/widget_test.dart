@@ -8,14 +8,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:resqlink_mobile/main.dart';
+import 'package:suraksha_setu_mobile/main.dart';
 
 void main() {
   testWidgets('Counter increments smoke test', (WidgetTester tester) async {
     // Build our app and trigger a frame.
-    await tester.pumpWidget(const ResQLinkApp());
+    await tester.pumpWidget(const SurakshaSetuApp());
 
     // Verify that our login screen loaded.
-    expect(find.text('RESQ LINK'), findsOneWidget);
+    expect(find.text('SURAKSHA SETU'), findsOneWidget);
   });
 }
