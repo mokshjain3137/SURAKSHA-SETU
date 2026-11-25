@@ -2203,7 +2203,12 @@ export default function Home() {
                 {/* Live SMS Data from Google Sheets */}
                 <div className="section" style={{ margin: 0 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
-                    <h2>Live SMS Requests (Google Sheets Sync)</h2>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <h2>Live SMS Requests (Google Sheets Sync)</h2>
+                      <span style={{ fontSize: '11px', background: '#e0f2fe', color: '#0369a1', padding: '3px 8px', borderRadius: '4px', fontWeight: 'bold' }}>
+                        📞 Gateway: {process.env.NEXT_PUBLIC_HQ_GATEWAY_PHONE || '+918310353102'}
+                      </span>
+                    </div>
                     {isSmsLoading && <span className="status-badge status-partial">Syncing...</span>}
                   </div>
                   {smsError ? (
