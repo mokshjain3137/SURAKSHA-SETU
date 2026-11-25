@@ -482,8 +482,8 @@ export default function Home() {
   const [broadcastZone, setBroadcastZone] = useState("All Sectors");
   const [isDemoModeOpen, setIsDemoModeOpen] = useState(false);
 
-  // Collapsible UI panels
-  const [isHardwareExpanded, setIsHardwareExpanded] = useState(false);
+  // Collapsible UI panels (Hardware open by default for live telemetry monitoring)
+  const [isHardwareExpanded, setIsHardwareExpanded] = useState(true);
   const [isWeatherExpanded, setIsWeatherExpanded] = useState(false);
   const [isVolunteerFormExpanded, setIsVolunteerFormExpanded] = useState(false);
   const [isUserResourcesExpanded, setIsUserResourcesExpanded] = useState(false);
