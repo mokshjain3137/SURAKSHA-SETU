@@ -38,7 +38,7 @@ const CREDENTIALS = {
 // Supabase client will be initialized after config loads
 let supabase = null;
 
-const WEATHER_API_KEY = "ffc79bc9d96b20005a62a24e1f39113a";
+const WEATHER_API_KEY = (window.ENV_CONFIG && window.ENV_CONFIG.WEATHER_API_KEY) || "";
 
 // Initialize
 document.addEventListener('DOMContentLoaded', function () {

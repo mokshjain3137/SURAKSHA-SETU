@@ -410,7 +410,7 @@ const TRANSLATIONS = {
   }
 };
 
-const WEATHER_API_KEY = "ffc79bc9d96b20005a62a24e1f39113a";
+const WEATHER_API_KEY = process.env.NEXT_PUBLIC_WEATHER_API_KEY || "";
 
 export default function Home() {
   // Toast Notification State
@@ -682,8 +682,12 @@ export default function Home() {
         const configResponse = await fetch('/api/config');
         const config = await configResponse.json();
 
-        const rawUrl = config.SUPABASE_URL || "https://roypndzefjunimxzvcnf.supabase.co";
-        const key = config.SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJveXBuZHplZmp1bmlteHp2Y25mIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgyMTgwNTMsImV4cCI6MjA5Mzc5NDA1M30.bxHGO-nOBEsTBDUg8WIVHRr3Qyxy0g1DxokvVOHqK18";
+        const rawUrl = config.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+        const key = config.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
+
+        if (!rawUrl || !key) {
+          return;
+        }
 
         const supabaseUrl = `${rawUrl.replace(/\/$/, '')}/rest/v1/sensor_logs?select=*&order=created_at.desc&limit=1`;
 
@@ -1468,22 +1472,24 @@ export default function Home() {
       setRequests(prev => [newRequest, ...prev]);
 
       // Telegram Message Dispatcher
-      const botToken = "8683344314:AAETE34zer-DgxDcDqa56Vi_sJ8MQeCSRQc";
-      const chatID = "7988893018";
+      const botToken = process.env.NEXT_PUBLIC_TELEGRAM_BOT_TOKEN || process.env.TELEGRAM_BOT_TOKEN || "";
+      const chatID = process.env.NEXT_PUBLIC_TELEGRAM_CHAT_ID || process.env.TELEGRAM_CHAT_ID || "";
       const msg = `🚨 *CRITICAL SOS ALERT*\n\nUser: ${newRequest.contactPerson}\nLocation: https://www.google.com/maps?q=${lat},${lng}\nStatus: IMMEDIATE RESPONSE REQUIRED`;
 
-      try {
-        await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            chat_id: chatID,
-            text: msg,
-            parse_mode: 'Markdown'
-          })
-        });
-      } catch (err) {
-        console.error("Telegram API connection failed:", err);
+      if (botToken && chatID) {
+        try {
+          await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              chat_id: chatID,
+              text: msg,
+              parse_mode: 'Markdown'
+            })
+          });
+        } catch (err) {
+          console.error("Telegram API connection failed:", err);
+        }
       }
 
       showToast("🚨 SOS EMERGENCY BROADCAST SUCCESSFUL! Operational units briefed. Stay in your current location if safe.", 'success');
