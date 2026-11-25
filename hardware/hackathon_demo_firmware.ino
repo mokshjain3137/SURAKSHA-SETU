@@ -22,7 +22,7 @@ const char* ssid     = "Realme15pro";       // Mobile Hotspot SSID
 const char* password = "Rishith2007";       // Mobile Hotspot Password
 
 // Laptop Local Server Telemetry Endpoint (Your exact Laptop Wi-Fi IP on port 3000)
-const char* server_url = "http://10.252.37.150:3000/api/telemetry";
+const char* server_url = "http://10.208.78.150:3000/api/telemetry";
 
 // Cloud Backup: Supabase REST API Credentials
 const char* supabase_url = "https://roypndzefjunimxzvcnf.supabase.co/rest/v1/sensor_logs";
