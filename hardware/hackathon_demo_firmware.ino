@@ -17,30 +17,45 @@
 #include <DHT.h>
 #include <Wire.h>
 
-// ======================= 1. NETWORK CONFIG =======================
-const char* ssid     = "Realme15pro";       // Your phone hotspot or Wi-Fi name
-const char* password = "Rishith2007";       // Your Wi-Fi password
+// ======================= 1. NETWORK & CLOUD CREDENTIALS =======================
+const char* ssid     = "Realme15pro";       // Mobile Hotspot SSID
+const char* password = "Rishith2007";       // Mobile Hotspot Password
 
-// Replace with your laptop's Wi-Fi IP address (run 'ipconfig' in cmd to find it)
-// Example: "http://192.168.43.100:3000/api/telemetry"
-const char* server_url = "http://192.168.43.100:3000/api/telemetry";
+// Laptop Local Server Telemetry Endpoint (Your exact Laptop Wi-Fi IP on port 3000)
+const char* server_url = "http://10.252.37.150:3000/api/telemetry";
+
+// Cloud Backup: Supabase REST API Credentials
+const char* supabase_url = "https://roypndzefjunimxzvcnf.supabase.co/rest/v1/sensor_logs";
+const char* supabase_key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJveXBuZHplZmp1bmlteHp2Y25mIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgyMTgwNTMsImV4cCI6MjA5Mzc5NDA1M30.bxHGO-nOBEsTBDUg8WIVHRr3Qyxy0g1DxokvVOHqK18";
+
+// Cloud Alerts: Telegram Bot Credentials
+const char* telegram_bot_token = "8683344314:AAETE34zer-DgxDcDqa56Vi_sJ8MQeCSRQc";
+const char* telegram_chat_id   = "7988893018";
 
 // ======================= 2. PIN DEFINITIONS =======================
 // DHT22 (Temperature & Humidity)
-#define DHTPIN 14
+#define DHTPIN 14          // Pin D14 (GPIO 14)
 #define DHTTYPE DHT22
 DHT dht(DHTPIN, DHTTYPE);
 
 // HC-SR04 Ultrasonic (Flood / Water Distance)
-#define TRIG_PIN 25
-#define ECHO_PIN 26
+#define TRIG_PIN 25        // Pin D25 (GPIO 25)
+#define ECHO_PIN 26        // Pin D26 (GPIO 26)
 
 // Raindrop Sensor (Analog AO pin)
-#define RAIN_PIN 33
+#define RAIN_PIN 33        // Pin D33 (GPIO 33)
 
-// ADXL345 I2C (SDA=21, SCL=22)
+// ADXL345 I2C (SDA=Pin D21, SCL=Pin D22)
+// Note: CS pin MUST be connected to 3.3V / VCC to enable I2C mode!
 #define ADXL345_ADDR 0x53
 bool adxl_found = false;
+
+// ======================= 2B. VIRTUAL POWER PINS (NO BREADBOARD NEEDED) =======================
+// If your hardware 3V3 and 5V pins are already occupied, these D-pins act as active 3.3V and GND:
+#define VIRTUAL_VCC_1  13  // Pin D13 -> Outputs +3.3V (for sensor VCC)
+#define VIRTUAL_GND_1  12  // Pin D12 -> Outputs 0V    (for sensor GND)
+#define VIRTUAL_VCC_2  4   // Pin D4  -> Outputs +3.3V (for sensor VCC / ADXL CS)
+#define VIRTUAL_GND_2  2   // Pin D2  -> Outputs 0V    (for sensor GND / SDO)
 
 // If you have Analog ADXL335 instead of ADXL345, set this to true:
 const bool USE_ANALOG_ADXL335 = false;
@@ -125,6 +140,18 @@ void setup() {
   Serial.println("\n==================================================");
   Serial.println("  SURAKSHA SETU — LIVE HARDWARE TELEMETRY NODE");
   Serial.println("==================================================");
+
+  // Setup Virtual Power Rails (for powering sensors without a breadboard)
+  pinMode(VIRTUAL_VCC_1, OUTPUT);
+  digitalWrite(VIRTUAL_VCC_1, HIGH); // Pin D13 = +3.3V
+  pinMode(VIRTUAL_GND_1, OUTPUT);
+  digitalWrite(VIRTUAL_GND_1, LOW);  // Pin D12 = GND
+
+  pinMode(VIRTUAL_VCC_2, OUTPUT);
+  digitalWrite(VIRTUAL_VCC_2, HIGH); // Pin D4 = +3.3V
+  pinMode(VIRTUAL_GND_2, OUTPUT);
+  digitalWrite(VIRTUAL_GND_2, LOW);  // Pin D2 = GND
+  delay(100); // Allow sensor power rails to stabilize
 
   // Initialize Sensors
   dht.begin();
