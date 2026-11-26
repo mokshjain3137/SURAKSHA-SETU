@@ -3,6 +3,23 @@ import path from 'path';
 
 const dataFilePath = path.join(process.cwd(), 'src/data/requests.json');
 
+function getAntiSpamConfig() {
+  try {
+    const configPath = path.join(process.cwd(), 'src/data/anti-spam.json');
+    if (fs.existsSync(configPath)) {
+      return JSON.parse(fs.readFileSync(configPath, 'utf8'));
+    }
+  } catch (err) {
+    console.error('Error loading anti-spam config in requests route:', err);
+  }
+  return { blockedNumbers: [], spamKeywords: [], rateLimitEnabled: false, rateLimitWindowSeconds: 30 };
+}
+
+function normalizePhone(num) {
+  if (!num) return '';
+  return String(num).replace(/[^0-9]/g, '');
+}
+
 // Helper to read data safely
 function readRequestsFromFile() {
   try {
@@ -43,6 +60,9 @@ export async function POST(request) {
   try {
     const body = await request.json();
     const currentRequests = readRequestsFromFile();
+    const spamConfig = getAntiSpamConfig();
+    const blockedNormalized = (spamConfig.blockedNumbers || []).map(normalizePhone).filter(Boolean);
+    const keywords = (spamConfig.spamKeywords || []).map(k => String(k).toLowerCase().trim()).filter(Boolean);
     
     // Check if it's an array of requests (from mobile sync bridge) or a single request (from web dashboard)
     const incomingRequests = Array.isArray(body) ? body : [body];
@@ -52,17 +72,43 @@ export async function POST(request) {
     for (const req of incomingRequests) {
       if (!req.requestId) continue;
 
+      // Anti-spam guardrails
+      const phoneNorm = normalizePhone(req.contactPhone);
+      const descLower = String(req.description || '').toLowerCase();
+      let isSpam = false;
+      let spamReason = null;
+
+      if (phoneNorm && blockedNormalized.some(b => phoneNorm.endsWith(b) || b.endsWith(phoneNorm))) {
+        isSpam = true;
+        spamReason = 'Sender phone is in blocked numbers registry';
+      }
+
+      if (!isSpam && keywords.length > 0) {
+        for (const kw of keywords) {
+          if (descLower.includes(kw)) {
+            isSpam = true;
+            spamReason = `Description contains spam keyword: "${kw}"`;
+            break;
+          }
+        }
+      }
+
+      const reqToSave = {
+        ...req,
+        ...(isSpam ? { isSpam: true, spamReason } : {})
+      };
+
       const existingIndex = currentRequests.findIndex(r => r.requestId === req.requestId);
       if (existingIndex !== -1) {
         // Update if status changes or fields are updated
         currentRequests[existingIndex] = {
           ...currentRequests[existingIndex],
-          ...req
+          ...reqToSave
         };
         updatedCount++;
       } else {
         // Insert new request
-        currentRequests.unshift(req); // add to top
+        currentRequests.unshift(reqToSave); // add to top
         addedCount++;
       }
     }
