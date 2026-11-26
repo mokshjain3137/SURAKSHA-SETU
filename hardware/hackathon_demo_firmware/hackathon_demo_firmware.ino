@@ -270,13 +270,18 @@ void loop() {
       sHttp.addHeader("Authorization", String("Bearer ") + supabase_key);
       sHttp.addHeader("Prefer", "return=minimal");
 
-      StaticJsonDocument<256> supaDoc;
-      supaDoc["node_id"] = "ESP32-NODE-01";
+      StaticJsonDocument<384> supaDoc;
       supaDoc["temperature"] = temp;
       supaDoc["humidity"] = hum;
       supaDoc["water_level"] = waterDist;
       supaDoc["seismic"] = seismic;
       supaDoc["rain_level"] = rainLevel;
+      supaDoc["soil_moisture"] = 2100;
+      supaDoc["baro_pressure"] = 1011.5;
+      supaDoc["altitude"] = 770.0;
+      supaDoc["air_quality"] = 180;
+      supaDoc["wind_speed"] = 12.5;
+      supaDoc["wind_direction"] = 190;
       supaDoc["status"] = status;
 
       String supaJson;

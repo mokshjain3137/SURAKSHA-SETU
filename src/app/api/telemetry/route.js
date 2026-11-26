@@ -70,6 +70,36 @@ export async function POST(request) {
 
     writeTelemetry(updated);
 
+    // Asynchronously mirror into Supabase Cloud sensor_logs
+    const supabaseUrl = process.env.SUPABASE_URL;
+    const supabaseKey = process.env.SUPABASE_ANON_KEY;
+    if (supabaseUrl && supabaseKey) {
+      const restEndpoint = `${supabaseUrl.replace(/\/$/, '')}/rest/v1/sensor_logs`;
+      fetch(restEndpoint, {
+        method: 'POST',
+        headers: {
+          'apikey': supabaseKey,
+          'Authorization': `Bearer ${supabaseKey}`,
+          'Content-Type': 'application/json',
+          'Prefer': 'return=minimal'
+        },
+        body: JSON.stringify({
+          temperature: updated.temperature,
+          humidity: updated.humidity,
+          water_level: updated.water_level,
+          seismic: updated.seismic,
+          rain_level: updated.rain_level,
+          soil_moisture: updated.soil_moisture,
+          baro_pressure: updated.baro_pressure,
+          altitude: updated.altitude,
+          air_quality: updated.air_quality,
+          wind_speed: updated.wind_speed,
+          wind_direction: updated.wind_direction,
+          status: updated.status
+        })
+      }).catch(e => console.error('Supabase auto-mirror error:', e.message));
+    }
+
     return Response.json({
       success: true,
       message: "Telemetry updated successfully",
