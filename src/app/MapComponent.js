@@ -33,6 +33,14 @@ export default function MapComponent({ lat, lng, name, requests, volunteers, onM
         boxZoom: true,
         dragging: true
       }).setView([lat, lng], 13);
+
+      tileLayerRef.current = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors'
+      }).addTo(mapRef.current);
+
+      setTimeout(() => {
+        mapRef.current?.invalidateSize();
+      }, 150);
     } else if (mapRef.current) {
       // Avoid jarring jumps if user is interacting, but center on base if coords change significantly
       const currentCenter = mapRef.current.getCenter();
@@ -185,19 +193,30 @@ export default function MapComponent({ lat, lng, name, requests, volunteers, onM
     };
   }, [lat, lng, name, requests, volunteers, onMapClick, smsAlerts]);
 
-  // Standard OSM Map Tile Layer
+  // Keep Leaflet size synced on container resize and clean up cleanly on unmount
   useEffect(() => {
-    if (!mapRef.current) return;
-    const L = require('leaflet');
-
-    if (tileLayerRef.current) {
-      tileLayerRef.current.remove();
+    const container = mapContainerRef.current;
+    let observer = null;
+    if (typeof ResizeObserver !== 'undefined' && container) {
+      observer = new ResizeObserver(() => {
+        mapRef.current?.invalidateSize();
+      });
+      observer.observe(container);
     }
 
-    const tileUrl = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
-    const attribution = '&copy; OpenStreetMap contributors';
-
-    tileLayerRef.current = L.tileLayer(tileUrl, { attribution }).addTo(mapRef.current);
+    return () => {
+      if (observer) observer.disconnect();
+      if (mapRef.current) {
+        mapRef.current.remove();
+        mapRef.current = null;
+        tileLayerRef.current = null;
+        baseMarkerRef.current = null;
+        selectedMarkerRef.current = null;
+        routePolylineRef.current = null;
+        routeGlowRef.current = null;
+        markersRef.current = [];
+      }
+    };
   }, []);
 
   // 7. Draw Selected Location Marker dynamically
