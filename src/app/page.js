@@ -3,11 +3,59 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import dynamic from 'next/dynamic';
 
 const MapComponent = dynamic(() => import('./MapComponent'), { ssr: false });
+import SurakshaSetuSMSPanel from '@/components/SurakshaSetuSMSPanel';
 
 const CREDENTIALS = {
-  admin: { username: "1", password: "1", role: "Admin", fullName: "System Admin" },
-  user: { username: "2", password: "2", role: "User", fullName: "On-Duty Officer" }
+  admin: { username: "1", password: "1", role: "Admin", fullName: "Govt Official" },
+  user: { username: "2", password: "2", role: "User", fullName: "On-Duty Officer" },
+  volunteer: { username: "3", password: "3", role: "Volunteer", fullName: "Field Volunteer" },
+  maintenance: { username: "4", password: "4", role: "Maintenance", fullName: "System Maintenance Admin" }
 };
+
+const VOLUNTEER_SPECIALTIES = [
+  {
+    value: "Doctor",
+    label: "Doctor / Physician",
+    docLabel: "Official Doctor ID / Medical Council Registration Card",
+    docHint: "Upload MBBS/MD license, Hospital Doctor ID, or State Medical Council ID (JPG, PNG, or PDF)"
+  },
+  {
+    value: "Nurse",
+    label: "Nurse / Nursing Staff",
+    docLabel: "Official Nursing Council ID / Hospital Staff ID",
+    docHint: "Upload Registered Nurse ID card or State Nursing Council registration (JPG, PNG, or PDF)"
+  },
+  {
+    value: "NCC/NSS Cadet",
+    label: "NCC / NSS Cadet",
+    docLabel: "Official NCC / NSS Cadet ID Card or Unit Certificate",
+    docHint: "Upload NCC C-Certificate, Battalion ID, or NSS Unit Volunteer Card (JPG, PNG, or PDF)"
+  },
+  {
+    value: "Paramedic / EMT",
+    label: "Paramedic / EMT",
+    docLabel: "Official Paramedic / First-Aid Certification ID",
+    docHint: "Upload EMT certification or Red Cross / St. John Ambulance ID (JPG, PNG, or PDF)"
+  },
+  {
+    value: "Rescue Personnel",
+    label: "Rescue / NDRF / SDRF Responder",
+    docLabel: "Official Rescue Force / Fire & Emergency Service ID",
+    docHint: "Upload NDRF/SDRF/Fire Service badge or deployment authorization (JPG, PNG, or PDF)"
+  },
+  {
+    value: "Driver / Logistics",
+    label: "Ambulance / Logistics Driver",
+    docLabel: "Commercial Driving License & Emergency Vehicle Permit",
+    docHint: "Upload valid Transport/Heavy Driving License or Ambulance Operator ID (JPG, PNG, or PDF)"
+  },
+  {
+    value: "Civil Volunteer",
+    label: "Civil Defense / General Volunteer",
+    docLabel: "Government Photo ID / Civil Defense Volunteer Pass",
+    docHint: "Upload Government ID or District Civil Defense Volunteer Pass (JPG, PNG, or PDF)"
+  }
+];
 
 const DEFAULT_RESOURCES = [
   { id: 1, name: "Emergency Medical Kit", type: "Medical Supplies", totalQuantity: 500, availableQuantity: 350 },
@@ -174,7 +222,7 @@ const TRANSLATIONS = {
     coordinates: "Coordinates",
     timezone: "Timezone",
     location_map: "Emergency Location Map",
-    submit_req_admin: "Submit Emergency Request (Admin)",
+    submit_req_admin: "Submit Emergency Request (Govt Official)",
     on_duty_vols: "On-Duty Volunteers",
     sys_analytics: "System Analytics & Predictions",
     resolved_history: "Resolved Requests History",
@@ -189,7 +237,7 @@ const TRANSLATIONS = {
     username: "Username",
     password: "Password",
     login_btn: "Login",
-    demo_btn: "Use Demo Admin Credentials",
+    demo_btn: "Use Demo Govt Official Credentials",
     dont_have_account: "Don't have an account? Register new account",
     disaster_mgmt: "Disaster Response Management System",
     join_suraksha_setu: "Join Suraksha Setu",
@@ -242,7 +290,7 @@ const TRANSLATIONS = {
     pinned_target: "Pinned Target",
     map_pin_required: "🚨 Map Target Pin Required",
     dispatch: "Dispatch",
-    admin: "Admin",
+    admin: "Govt Official",
     from_north: "from North",
     units: "units",
     dispatch_title: "Select Incident Request for Dispatch",
@@ -319,7 +367,7 @@ const TRANSLATIONS = {
     coordinates: "ನಿರ್ದೇಶಾಂಕಗಳು",
     timezone: "ಸಮಯ ವಲಯ",
     location_map: "ತುರ್ತು ಸ್ಥಳ ನಕ್ಷೆ",
-    submit_req_admin: "ತುರ್ತು ವಿನಂತಿ ಸಲ್ಲಿಸಿ (ನಿರ್ವಾಹಕರು)",
+    submit_req_admin: "ತುರ್ತು ವಿನಂತಿ ಸಲ್ಲಿಸಿ (ಸರ್ಕಾರಿ ಅಧಿಕಾರಿ)",
     on_duty_vols: "ಕರ್ತವ್ಯದಲ್ಲಿರುವ ಸ್ವಯಂಸೇವಕರು",
     sys_analytics: "ವ್ಯವಸ್ಥೆ ವಿಶ್ಲೇಷಣೆ ಮತ್ತು ಮುನ್ಸೂಚನೆಗಳು",
     resolved_history: "ಪರಿಹರಿಸಲಾದ ವಿನಂತಿಗಳ ಇತಿಹಾಸ",
@@ -387,7 +435,7 @@ const TRANSLATIONS = {
     pinned_target: "ಪಿನ್ ಮಾಡಿದ ಗುರಿ",
     map_pin_required: "🚨 ನಕ್ಷೆಯಲ್ಲಿ ಗುರಿ ಗುರುತಿಸುವುದು ಅಗತ್ಯ",
     dispatch: "ನಿಯೋಜಿಸು",
-    admin: "ನಿರ್ವಾಹಕರು",
+    admin: "ಸರ್ಕಾರಿ ಅಧಿಕಾರಿ",
     from_north: "ಉತ್ತರದಿಂದ",
     units: "ಘಟಕಗಳು",
     dispatch_title: "ನಿಯೋಜನೆಗಾಗಿ ಘಟನೆ ವಿನಂತಿಯನ್ನು ಆಯ್ಕೆಮಾಡಿ",
@@ -409,7 +457,7 @@ const TRANSLATIONS = {
   }
 };
 
-const WEATHER_API_KEY = "ffc79bc9d96b20005a62a24e1f39113a";
+const WEATHER_API_KEY = process.env.NEXT_PUBLIC_WEATHER_API_KEY || "";
 
 export default function Home() {
   // Toast Notification State
@@ -499,6 +547,7 @@ export default function Home() {
   const [showAllocateModal, setShowAllocateModal] = useState(false);
   const [allocateRequest, setAllocateRequest] = useState(null);
   const [allocateQtyVal, setAllocateQtyVal] = useState('');
+  const [allocateVolunteerId, setAllocateVolunteerId] = useState('');
 
   const [showResourceModal, setShowResourceModal] = useState(false);
   const [resourceModalData, setResourceModalData] = useState({ id: '', name: '', type: '', totalQuantity: '', availableQuantity: '' });
@@ -519,15 +568,61 @@ export default function Home() {
   const [adminPhone, setAdminPhone] = useState('');
   const [adminDescription, setAdminDescription] = useState('');
 
-  // SMS Google Sheets Integration
+  // SurakshaSetu Off-Grid SMS Alerts
   const [smsData, setSmsData] = useState([]);
-  const [isSmsLoading, setIsSmsLoading] = useState(false);
-  const [smsError, setSmsError] = useState(null);
 
   // Volunteer Join Inputs
   const [volName, setVolName] = useState('');
   const [volRole, setVolRole] = useState('Medical');
   const [volPhone, setVolPhone] = useState('');
+
+  // Volunteer Login Verification & Onboarding State
+  const [volunteerProfile, setVolunteerProfile] = useState({
+    id: null,
+    name: '',
+    phone: '',
+    specialty: '',
+    docNumber: '',
+    docFileName: '',
+    docFileSize: '',
+    isVerified: false
+  });
+
+  // System Maintenance Admin State (Role 4)
+  const [maintenanceTab, setMaintenanceTab] = useState('health'); // 'health' | 'onboarding' | 'offline-maps' | 'anti-spam'
+  const [systemHealth, setSystemHealth] = useState({
+    telemetry: { status: 'Checking...', latency: 0, count: 0, nodeCount: 1 },
+    sms: { status: 'Checking...', latency: 0, count: 0 },
+    requests: { status: 'Checking...', latency: 0, count: 0 },
+    volunteers: { status: 'Checking...', latency: 0, count: 0 },
+    offlineMaps: { status: 'Checking...', latency: 0, count: 0 },
+    antiSpam: { status: 'Checking...', latency: 0, count: 0 },
+    lastChecked: null
+  });
+  const [isHealthRefreshing, setIsHealthRefreshing] = useState(false);
+
+  // Maintenance: Volunteer Onboarding Form (Add-Only, verified: false, status: 'pending')
+  const [maintVolName, setMaintVolName] = useState('');
+  const [maintVolPhone, setMaintVolPhone] = useState('');
+  const [maintVolSpecialty, setMaintVolSpecialty] = useState('Paramedic / EMT');
+  const [maintVolSector, setMaintVolSector] = useState('Tumkur Central Sector');
+  const [maintVolDocNumber, setMaintVolDocNumber] = useState('');
+  const [isOnboardingSaving, setIsOnboardingSaving] = useState(false);
+
+  // Maintenance: Offline Maps Management
+  const [offlineMapPackages, setOfflineMapPackages] = useState([]);
+  const [syncingMapId, setSyncingMapId] = useState(null);
+  const [viewingMapPackage, setViewingMapPackage] = useState(null);
+
+  // Maintenance: Anti-Spam Management
+  const [antiSpamConfig, setAntiSpamConfig] = useState({
+    blockedNumbers: [],
+    spamKeywords: [],
+    rateLimitEnabled: true,
+    rateLimitWindowSeconds: 30
+  });
+  const [newBlockedNumberInput, setNewBlockedNumberInput] = useState('');
+  const [newSpamKeywordInput, setNewSpamKeywordInput] = useState('');
 
   const routeTimeoutRef = useRef(null);
   const routeModalTimeoutRef = useRef(null);
@@ -549,12 +644,23 @@ export default function Home() {
       }
     }
 
+    const savedVolunteerProfile = localStorage.getItem('surakshaVolunteerProfile');
+    if (savedVolunteerProfile) {
+      try {
+        const volProf = JSON.parse(savedVolunteerProfile);
+        setTimeout(() => {
+          setVolunteerProfile(volProf);
+        }, 0);
+      } catch (e) {
+        localStorage.removeItem('surakshaVolunteerProfile');
+      }
+    }
+
     // Restore Settings
-    const savedLang = localStorage.getItem('suraksha_setu_lang');
+    localStorage.removeItem('suraksha_setu_lang');
     const savedTactical = localStorage.getItem('tacticalMode') === 'true';
     const savedMobile = localStorage.getItem('mobileViewActive') === 'true';
     setTimeout(() => {
-      if (savedLang) setLang(savedLang);
       setTacticalMode(savedTactical);
       setMobileView(savedMobile);
     }, 0);
@@ -579,22 +685,39 @@ export default function Home() {
         if (res.ok) {
           const data = await res.json();
           if (data && data.length > 0) {
+            let maxReqNum = 1005;
             const mapped = data.map(req => {
+              const reqMatch = typeof req.requestId === 'string' && req.requestId.match(/^REQ-(\d+)$/);
+              if (reqMatch) {
+                const num = parseInt(reqMatch[1], 10);
+                if (num > maxReqNum) maxReqNum = num;
+              }
+
+              const isSos = Boolean(req.isSOS || (typeof req.requestId === 'string' && req.requestId.startsWith('SOS-')) || req.resourceType === 'CRITICAL SOS');
+              const hasStoredPriority = typeof req.priorityScore === 'number' && typeof req.mlPriorityClass === 'string';
               const mlResult = calculateMLPriority(req.resourceType, req.individualsAffected, req.severity);
+
               return {
                 ...req,
                 id: req.id || req.requestId,
-                priorityScore: mlResult.priorityScore,
-                mlPriorityClass: mlResult.priorityClass,
-                mlConfidence: mlResult.mlConfidence / 100
+                priorityScore: isSos
+                  ? Math.max(150, req.priorityScore || 150)
+                  : (hasStoredPriority ? req.priorityScore : mlResult.priorityScore),
+                mlPriorityClass: isSos
+                  ? 'critical'
+                  : (hasStoredPriority ? req.mlPriorityClass : mlResult.priorityClass),
+                mlConfidence: typeof req.mlConfidence === 'number'
+                  ? req.mlConfidence
+                  : (isSos ? 0.99 : mlResult.mlConfidence / 100)
               };
             });
             setRequests(mapped);
+            setNextRequestId(prev => Math.max(prev, maxReqNum + 1));
             return;
           }
         }
       } catch (err) {
-        console.error("Failed to load requests from server:", err);
+        console.warn("Failed to load requests from server:", err);
       }
 
       const seededRequests = DUMMY_REQUESTS.map(req => {
@@ -609,13 +732,29 @@ export default function Home() {
       setRequests(seededRequests);
     };
 
+    const loadVolunteers = async () => {
+      try {
+        const res = await fetch('/api/volunteers');
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.length > 0) {
+            setVolunteers(data);
+          }
+        }
+      } catch (err) {
+        console.warn("Failed to load volunteers from server:", err);
+      }
+    };
+
     loadRequests();
     loadBroadcasts();
+    loadVolunteers();
 
     // Poll updates every 6 seconds (hackathon friendly speed!)
     const pollInterval = setInterval(() => {
       loadRequests();
       loadBroadcasts();
+      loadVolunteers();
     }, 6000);
 
     return () => clearInterval(pollInterval);
@@ -683,8 +822,12 @@ export default function Home() {
         const configResponse = await fetch('/api/config');
         const config = await configResponse.json();
 
-        const rawUrl = config.SUPABASE_URL || "https://roypndzefjunimxzvcnf.supabase.co";
-        const key = config.SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJveXBuZHplZmp1bmlteHp2Y25mIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgyMTgwNTMsImV4cCI6MjA5Mzc5NDA1M30.bxHGO-nOBEsTBDUg8WIVHRr3Qyxy0g1DxokvVOHqK18";
+        const rawUrl = config.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+        const key = config.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
+
+        if (!rawUrl || !key) {
+          return;
+        }
 
         const supabaseUrl = `${rawUrl.replace(/\/$/, '')}/rest/v1/sensor_logs?select=*&order=created_at.desc&limit=1`;
 
@@ -738,72 +881,7 @@ export default function Home() {
     };
   }, []);
 
-  // 2.5 Live SMS Data Polling (Google Sheets)
-  useEffect(() => {
-    const fetchSmsData = async () => {
-      setIsSmsLoading(true);
-      setSmsError(null);
-      try {
-        const response = await fetch('https://docs.google.com/spreadsheets/d/10Tq6CAz9CBBOapmcSk9QXoVxuX0B7xmXxDE74F2CJpY/export?format=csv');
-        if (!response.ok) throw new Error('Failed to fetch SMS data');
-        const text = await response.text();
-
-        const rows = [];
-        let currentRow = [];
-        let currentCell = '';
-        let inQuotes = false;
-
-        for (let i = 0; i < text.length; i++) {
-          const char = text[i];
-          if (char === '"') {
-            if (inQuotes && text[i + 1] === '"') {
-              currentCell += '"';
-              i++;
-            } else {
-              inQuotes = !inQuotes;
-            }
-          } else if (char === ',' && !inQuotes) {
-            currentRow.push(currentCell.trim());
-            currentCell = '';
-          } else if (char === '\n' && !inQuotes) {
-            currentRow.push(currentCell.trim());
-            rows.push(currentRow);
-            currentRow = [];
-            currentCell = '';
-          } else if (char !== '\r' || inQuotes) {
-            currentCell += char;
-          }
-        }
-        if (currentCell !== '' || currentRow.length > 0) {
-          currentRow.push(currentCell.trim());
-          rows.push(currentRow);
-        }
-
-        if (rows.length > 0) {
-          const headers = rows[0];
-          const data = [];
-          for (let i = 1; i < rows.length; i++) {
-            if (rows[i].length === 0 || (rows[i].length === 1 && !rows[i][0])) continue;
-            const obj = {};
-            headers.forEach((header, index) => {
-              obj[header] = rows[i][index] || '';
-            });
-            data.push(obj);
-          }
-          setSmsData(data);
-        }
-      } catch (err) {
-        console.error("SMS Fetch Error:", err);
-        setSmsError(err.message);
-      } finally {
-        setIsSmsLoading(false);
-      }
-    };
-
-    fetchSmsData();
-    const interval = setInterval(fetchSmsData, 5000); // 5 seconds
-    return () => clearInterval(interval);
-  }, []);
+  // 2.5 SurakshaSetu SMS live feed is managed via SurakshaSetuSMSPanel component
 
   // 3. API Requests & Helper Functions
   function fetchWeather(lat, lng) {
@@ -842,7 +920,15 @@ export default function Home() {
     let priorityClass = 'low';
     let baseScore = 0;
 
-    if (resourceType === 'Ambulance' || resourceType === 'Rescue Team') {
+    if (resourceType === 'CRITICAL SOS') {
+      return {
+        priorityClass: 'critical',
+        priorityScore: 150 + ((severity || 5) * 3),
+        mlConfidence: 99
+      };
+    }
+
+    if (resourceType === 'Ambulance' || resourceType === 'Rescue Team' || resourceType === 'Rescue Boats') {
       if (individualsAffected >= 25) {
         priorityClass = 'critical';
         baseScore = 120;
@@ -853,7 +939,7 @@ export default function Home() {
         priorityClass = 'medium';
         baseScore = 40;
       }
-    } else if (resourceType === 'Medical Supplies') {
+    } else if (resourceType === 'Medical Supplies' || resourceType === 'Medical' || resourceType === 'Heavy Machinery') {
       if (individualsAffected >= 100 || (individualsAffected >= 50 && severity >= 4)) {
         priorityClass = 'critical';
         baseScore = 110;
@@ -881,7 +967,7 @@ export default function Home() {
         priorityClass = 'low';
         baseScore = 12;
       }
-    } else if (resourceType === 'Shelter') {
+    } else if (resourceType === 'Shelter' || resourceType === 'Bedding') {
       if (individualsAffected >= 150) {
         priorityClass = 'critical';
         baseScore = 108;
@@ -897,7 +983,7 @@ export default function Home() {
       }
     }
 
-    const finalScore = baseScore + (severity * 3);
+    const finalScore = baseScore + ((severity || 1) * 3);
     const confidence = Math.min(95, 75 + Math.floor(Math.random() * 15));
 
     return {
@@ -1002,6 +1088,24 @@ export default function Home() {
     } else if (username === CREDENTIALS.user.username && password === CREDENTIALS.user.password) {
       setCurrentUser(CREDENTIALS.user);
       localStorage.setItem('drmsCurrentUser', JSON.stringify(CREDENTIALS.user));
+    } else if (username === CREDENTIALS.volunteer.username && password === CREDENTIALS.volunteer.password) {
+      const freshProfile = {
+        id: null,
+        name: '',
+        phone: '',
+        specialty: '',
+        docNumber: '',
+        docFileName: '',
+        docFileSize: '',
+        isVerified: false
+      };
+      setVolunteerProfile(freshProfile);
+      localStorage.removeItem('surakshaVolunteerProfile');
+      setCurrentUser(CREDENTIALS.volunteer);
+      localStorage.setItem('drmsCurrentUser', JSON.stringify(CREDENTIALS.volunteer));
+    } else if (username === CREDENTIALS.maintenance.username && password === CREDENTIALS.maintenance.password) {
+      setCurrentUser(CREDENTIALS.maintenance);
+      localStorage.setItem('drmsCurrentUser', JSON.stringify(CREDENTIALS.maintenance));
     } else {
       setAuthError('Invalid credentials. Check username or password.');
     }
@@ -1030,32 +1134,200 @@ export default function Home() {
   const handleLogout = () => {
     setCurrentUser(null);
     localStorage.removeItem('drmsCurrentUser');
+    localStorage.removeItem('surakshaVolunteerProfile');
+    setVolunteerProfile({
+      id: null,
+      name: '',
+      phone: '',
+      specialty: '',
+      docNumber: '',
+      docFileName: '',
+      docFileSize: '',
+      isVerified: false
+    });
     setShowRegister(false);
     setUsernameInput('');
     setPasswordInput('');
   };
 
-  const fillDemoCredentials = () => {
-    setUsernameInput('1');
-    setPasswordInput('1');
+  const fillDemoCredentials = (user = '1', pass = '1') => {
+    setUsernameInput(user);
+    setPasswordInput(pass);
   };
 
-  const handleUserRequestSubmit = (e) => {
+  const handleSelectExistingVolunteer = (vol) => {
+    const restoredProfile = {
+      id: vol.id,
+      name: vol.name,
+      phone: vol.phone || 'N/A',
+      specialty: vol.specialty || vol.role || 'Volunteer',
+      docNumber: vol.docNumber || '',
+      docFileName: vol.docFileName || 'Verified on file',
+      docFileSize: '',
+      isVerified: true,
+      verifiedAt: vol.verifiedAt || new Date().toISOString()
+    };
+    setVolunteerProfile(restoredProfile);
+    localStorage.setItem('surakshaVolunteerProfile', JSON.stringify(restoredProfile));
+
+    const updatedUser = {
+      ...CREDENTIALS.volunteer,
+      fullName: `${restoredProfile.name} (${restoredProfile.specialty})`
+    };
+    setCurrentUser(updatedUser);
+    localStorage.setItem('drmsCurrentUser', JSON.stringify(updatedUser));
+    showToast(`Welcome back, ${restoredProfile.name}! Viewing your personal dispatch dashboard.`, 'success');
+  };
+
+  const handleVolunteerVerifySubmit = async (e) => {
+    e.preventDefault();
+    if (!volunteerProfile.name.trim()) {
+      showToast('Please enter your full name.', 'error');
+      return;
+    }
+    if (!volunteerProfile.specialty) {
+      showToast('Please select your area of specialty or profession.', 'error');
+      return;
+    }
+    if (!volunteerProfile.docFileName) {
+      showToast('Please upload the required verification document.', 'error');
+      return;
+    }
+
+    const cleanName = volunteerProfile.name.trim();
+    const cleanPhone = volunteerProfile.phone.trim() || 'N/A';
+    const existingVol = volunteers.find(v => v.name.toLowerCase() === cleanName.toLowerCase());
+    const volId = existingVol ? existingVol.id : Date.now();
+
+    const newVolRecord = {
+      id: volId,
+      name: cleanName,
+      role: volunteerProfile.specialty,
+      specialty: volunteerProfile.specialty,
+      phone: cleanPhone,
+      docNumber: volunteerProfile.docNumber.trim(),
+      docFileName: volunteerProfile.docFileName,
+      verified: true,
+      verifiedAt: new Date().toISOString(),
+      status: existingVol ? existingVol.status : 'available',
+      lat: existingVol ? existingVol.lat : currentBaseLocation.lat + (Math.random() - 0.5) * 0.02,
+      lng: existingVol ? existingVol.lng : currentBaseLocation.lng + (Math.random() - 0.5) * 0.02
+    };
+
+    try {
+      const res = await fetch('/api/volunteers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newVolRecord)
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.volunteers) {
+          setVolunteers(data.volunteers);
+        }
+      }
+    } catch (err) {
+      console.warn("Failed to persist verified volunteer:", err);
+    }
+
+    const verifiedProfile = {
+      ...volunteerProfile,
+      id: volId,
+      name: cleanName,
+      phone: cleanPhone,
+      isVerified: true,
+      verifiedAt: newVolRecord.verifiedAt
+    };
+
+    setVolunteerProfile(verifiedProfile);
+    localStorage.setItem('surakshaVolunteerProfile', JSON.stringify(verifiedProfile));
+
+    const updatedUser = {
+      ...CREDENTIALS.volunteer,
+      fullName: `${verifiedProfile.name} (${verifiedProfile.specialty})`
+    };
+    setCurrentUser(updatedUser);
+    localStorage.setItem('drmsCurrentUser', JSON.stringify(updatedUser));
+
+    setVolunteers(prev => {
+      const exists = prev.some(v => v.id === volId || v.name.toLowerCase() === cleanName.toLowerCase());
+      if (exists) {
+        return prev.map(v => (v.id === volId || v.name.toLowerCase() === cleanName.toLowerCase()) ? newVolRecord : v);
+      }
+      return [newVolRecord, ...prev];
+    });
+
+    showToast(`✅ ID verified as ${verifiedProfile.specialty}! Your profile is now live on the Govt Official dashboard.`, 'success');
+  };
+
+  const handleVolunteerCompleteDispatch = async (req) => {
+    const volunteerName = volunteerProfile.name || currentUser?.fullName || 'Field Volunteer';
+    const volunteerSpec = volunteerProfile.specialty || 'Volunteer';
+
+    const updatedReq = {
+      ...req,
+      dispatchStatus: 'completed',
+      completedByVolunteerId: volunteerProfile.id || req.assignedVolunteerId || null,
+      completedByVolunteerName: volunteerName,
+      completedBySpecialty: volunteerSpec,
+      completedByDocFile: volunteerProfile.docFileName || '',
+      dispatchedAt: new Date().toISOString()
+    };
+
+    setRequests(prev => prev.map(r => (r.id === req.id || r.requestId === req.requestId) ? updatedReq : r));
+
+    // Mark volunteer available again once dispatch is done
+    if (volunteerProfile.id) {
+      setVolunteers(prev => prev.map(v => v.id === volunteerProfile.id ? { ...v, status: 'available' } : v));
+      fetch('/api/volunteers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: volunteerProfile.id, name: volunteerName, status: 'available' })
+      }).catch(err => console.warn("Failed to update volunteer availability:", err));
+    }
+
+    try {
+      const res = await fetch('/api/requests', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedReq)
+      });
+      if (!res.ok) throw new Error('Failed to sync dispatch completion');
+      showToast(`✅ Dispatch completed by ${volunteerName} (${volunteerSpec})! Moved to your Completed list & updated on Govt Official dashboard.`, 'success');
+    } catch (err) {
+      console.warn("Error completing dispatch on server:", err);
+      showToast('Failed to sync completion with Govt Official server.', 'error');
+    }
+  };
+
+  const getUniqueRequestId = (prefix = 'REQ') => {
+    if (prefix === 'SOS') {
+      return `SOS-${Date.now().toString().slice(-6)}`;
+    }
+    let candidate = nextRequestId;
+    while (requests.some(r => r.requestId === `${prefix}-${candidate}`)) {
+      candidate += 1;
+    }
+    setNextRequestId(candidate + 1);
+    return `${prefix}-${candidate}`;
+  };
+
+  const handleUserRequestSubmit = async (e) => {
     e.preventDefault();
     if (!selectedLocation) {
       showToast('Please click on the map to specify coordinates first.', 'error');
       return;
     }
 
-    const qty = parseInt(userQuantity);
-    const sev = parseInt(userSeverity);
-    const affected = parseInt(userIndividuals);
+    const qty = parseInt(userQuantity, 10);
+    const sev = parseInt(userSeverity, 10);
+    const affected = parseInt(userIndividuals, 10);
 
     const mlResult = calculateMLPriority(userResourceType, affected, sev);
 
     const newRequest = {
       id: Date.now(),
-      requestId: `REQ-${nextRequestId}`,
+      requestId: getUniqueRequestId('REQ'),
       resourceType: userResourceType,
       quantityRequested: qty,
       quantityAllocated: 0,
@@ -1074,14 +1346,20 @@ export default function Home() {
     };
 
     setRequests(prev => [newRequest, ...prev]);
-    setNextRequestId(prev => prev + 1);
 
     // Save request to server DB persistently
-    fetch('/api/requests', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(newRequest)
-    }).catch(err => console.error("Error saving request to server:", err));
+    try {
+      const res = await fetch('/api/requests', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newRequest)
+      });
+      if (!res.ok) throw new Error('Failed to save request');
+    } catch (err) {
+      console.warn("Error saving request to server:", err);
+      showToast('Failed to sync request to Admin Dashboard.', 'error');
+      return;
+    }
 
     // Reset Form
     setUserResourceType('');
@@ -1094,22 +1372,22 @@ export default function Home() {
     showToast('Emergency request submitted successfully!', 'success');
   };
 
-  const handleAdminRequestSubmit = (e) => {
+  const handleAdminRequestSubmit = async (e) => {
     e.preventDefault();
     if (!selectedLocation) {
       showToast('Please select coordinates on the map.', 'error');
       return;
     }
 
-    const qty = parseInt(adminQuantity);
-    const sev = parseInt(adminSeverity);
-    const affected = parseInt(adminIndividuals);
+    const qty = parseInt(adminQuantity, 10);
+    const sev = parseInt(adminSeverity, 10);
+    const affected = parseInt(adminIndividuals, 10);
 
     const mlResult = calculateMLPriority(adminResourceType, affected, sev);
 
     const newRequest = {
       id: Date.now(),
-      requestId: `REQ-${nextRequestId}`,
+      requestId: getUniqueRequestId('REQ'),
       resourceType: adminResourceType,
       quantityRequested: qty,
       quantityAllocated: 0,
@@ -1128,14 +1406,20 @@ export default function Home() {
     };
 
     setRequests(prev => [newRequest, ...prev]);
-    setNextRequestId(prev => prev + 1);
 
     // Save request to server DB persistently
-    fetch('/api/requests', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(newRequest)
-    }).catch(err => console.error("Error saving request to server:", err));
+    try {
+      const res = await fetch('/api/requests', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newRequest)
+      });
+      if (!res.ok) throw new Error('Failed to save request');
+    } catch (err) {
+      console.warn("Error saving request to server:", err);
+      showToast('Failed to save request to server.', 'error');
+      return;
+    }
 
     // Reset Form
     setAdminResourceType('');
@@ -1150,19 +1434,26 @@ export default function Home() {
     showToast('Emergency request submitted successfully!', 'success');
   };
 
-  const handleVolunteerRegister = (e) => {
+  const handleVolunteerRegister = async (e) => {
     e.preventDefault();
     const newVol = {
       id: Date.now(),
       name: volName,
       role: volRole,
+      specialty: volRole,
       phone: volPhone,
       status: 'available',
+      verified: false,
       lat: currentBaseLocation.lat + (Math.random() - 0.5) * 0.04,
       lng: currentBaseLocation.lng + (Math.random() - 0.5) * 0.04
     };
 
-    setVolunteers(prev => [...prev, newVol]);
+    setVolunteers(prev => [newVol, ...prev]);
+    fetch('/api/volunteers', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(newVol)
+    }).catch(err => console.warn("Failed to persist volunteer:", err));
     showToast(`Thank you ${volName}! You are registered as ${volRole} volunteer.`, 'success');
     setVolName('');
     setVolPhone('');
@@ -1177,8 +1468,13 @@ export default function Home() {
     const vol = volunteers.find(v => v.id === volId);
     if (!vol) return;
 
-    // Update volunteer state locally
+    // Update volunteer state locally and on server
     setVolunteers(prev => prev.map(v => v.id === volId ? { ...v, status: 'busy' } : v));
+    fetch('/api/volunteers', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: volId, name: vol.name, status: 'busy' })
+    }).catch(err => console.warn("Failed to update volunteer status:", err));
 
     // Update request locally and on server
     const updatedRequest = {
@@ -1187,7 +1483,13 @@ export default function Home() {
       quantityAllocated: target.quantityRequested,
       quantityPending: 0,
       assignedVolunteerId: volId,
-      assignedVolunteerName: vol.name
+      assignedVolunteerName: vol.name,
+      assignedVolunteerSpecialty: vol.specialty || vol.role,
+      dispatchStatus: 'yet_to_dispatch',
+      completedByVolunteerId: null,
+      completedByVolunteerName: null,
+      completedBySpecialty: null,
+      allocatedAt: new Date().toISOString()
     };
 
     setRequests(prev => prev.map(r => r.id === reqId ? updatedRequest : r));
@@ -1203,7 +1505,7 @@ export default function Home() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updatedRequest)
       });
-      showToast(`Dispatched volunteer ${vol.name} to ${target.requestId} (${target.resourceType})`, 'success');
+      showToast(`Dispatched ${vol.name} (${vol.specialty || vol.role}) to ${target.requestId} (${target.resourceType})`, 'success');
     } catch (err) {
       console.error("Failed to sync dispatch on server:", err);
     }
@@ -1497,79 +1799,124 @@ export default function Home() {
       });
   };
 
-  const handleSOSPanic = () => {
+  const handleSOSPanic = async () => {
     if (!confirm("🚨 CONFIRM SOS PANIC TRIGGER? This immediately broadcasts coordinates to the emergency team via secure channels.")) {
       return;
     }
 
-    if (!navigator.geolocation) {
-      showToast("Browser GPS telemetry unavailable. Please submit request manually.", 'error');
+    const resolveCoords = () => new Promise((resolve) => {
+      if (selectedLocation && typeof selectedLocation.lat === 'number' && typeof selectedLocation.lng === 'number') {
+        resolve({ lat: selectedLocation.lat, lng: selectedLocation.lng, source: 'Map Pin' });
+        return;
+      }
+      if (!navigator.geolocation) {
+        resolve({ lat: currentBaseLocation.lat, lng: currentBaseLocation.lng, source: 'Base Telemetry Fallback' });
+        return;
+      }
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          resolve({ lat: position.coords.latitude, lng: position.coords.longitude, source: 'GPS' });
+        },
+        () => {
+          resolve({ lat: currentBaseLocation.lat, lng: currentBaseLocation.lng, source: 'Base Telemetry Fallback' });
+        },
+        { enableHighAccuracy: false, timeout: 4000, maximumAge: 60000 }
+      );
+    });
+
+    const coords = await resolveCoords();
+    const qty = parseInt(userQuantity, 10) > 0 ? parseInt(userQuantity, 10) : 1;
+    const sev = parseInt(userSeverity, 10) > 0 ? parseInt(userSeverity, 10) : 5;
+    const affected = parseInt(userIndividuals, 10) > 0 ? parseInt(userIndividuals, 10) : 1;
+    const resourceType = userResourceType || "CRITICAL SOS";
+    const customDesc = userDescription && userDescription.trim()
+      ? `🚨 SOS ALERT: ${userDescription.trim()}`
+      : "🚨 SECURE SOS SIGNAL: Panic alert dispatched from mobile client. Critical response required at location.";
+
+    const mlResult = calculateMLPriority(resourceType, affected, sev);
+
+    const newRequest = {
+      id: Date.now(),
+      requestId: getUniqueRequestId('SOS'),
+      resourceType,
+      quantityRequested: qty,
+      quantityAllocated: 0,
+      quantityPending: qty,
+      lat: coords.lat,
+      lng: coords.lng,
+      severity: sev,
+      individualsAffected: affected,
+      status: 'pending',
+      priorityScore: Math.max(150.0, parseFloat(mlResult.priorityScore.toFixed(1))),
+      mlPriorityClass: 'critical',
+      mlConfidence: 0.99,
+      isSOS: true,
+      contactPerson: currentUser ? currentUser.fullName : "Anonymous Civilian",
+      contactPhone: coords.source === 'GPS' ? "GEO-LOCATED" : "SOS-DISPATCH",
+      description: customDesc
+    };
+
+    setRequests(prev => [newRequest, ...prev]);
+
+    try {
+      const saveRes = await fetch('/api/requests', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newRequest)
+      });
+      if (!saveRes.ok) {
+        throw new Error('Failed to persist SOS to server');
+      }
+    } catch (err) {
+      console.warn("Error saving SOS request to server:", err);
+      showToast("Failed to sync SOS to Command HQ server.", 'error');
       return;
     }
 
-    navigator.geolocation.getCurrentPosition(async (position) => {
-      const lat = position.coords.latitude;
-      const lng = position.coords.longitude;
+    // Clear user form fields if filled before SOS
+    setUserResourceType('');
+    setUserQuantity('');
+    setUserSeverity('');
+    setUserIndividuals('');
+    setUserDescription('');
+    setSelectedLocation(null);
 
-      const newRequest = {
-        id: Date.now(),
-        requestId: `SOS-${Date.now().toString().slice(-4)}`,
-        resourceType: "CRITICAL SOS",
-        quantityRequested: 1,
-        quantityAllocated: 0,
-        quantityPending: 1,
-        lat,
-        lng,
-        severity: 5,
-        individualsAffected: 1,
-        status: 'pending',
-        priorityScore: 150.0,
-        mlPriorityClass: 'critical',
-        mlConfidence: 0.99,
-        contactPerson: currentUser ? currentUser.fullName : "Anonymous Civilian",
-        contactPhone: "GEO-LOCATED",
-        description: "🚨 SECURE SOS SIGNAL: Panic alert dispatched from mobile client. Critical response required at location."
-      };
+    // Telegram Message Dispatcher (non-blocking)
+    const botToken = process.env.NEXT_PUBLIC_TELEGRAM_BOT_TOKEN || process.env.TELEGRAM_BOT_TOKEN || "";
+    const chatID = process.env.NEXT_PUBLIC_TELEGRAM_CHAT_ID || process.env.TELEGRAM_CHAT_ID || "";
+    const msg = `🚨 *CRITICAL SOS ALERT*\n\nUser: ${newRequest.contactPerson}\nNeed: ${newRequest.resourceType} (${newRequest.quantityRequested})\nLocation: https://www.google.com/maps?q=${coords.lat},${coords.lng}\nStatus: IMMEDIATE RESPONSE REQUIRED`;
 
-      setRequests(prev => [newRequest, ...prev]);
+    if (botToken && chatID) {
+      fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chat_id: chatID,
+          text: msg,
+          parse_mode: 'Markdown'
+        })
+      }).catch(err => console.warn("Telegram API notification skipped:", err));
+    }
 
-      // Telegram Message Dispatcher
-      const botToken = "8683344314:AAETE34zer-DgxDcDqa56Vi_sJ8MQeCSRQc";
-      const chatID = "7988893018";
-      const msg = `🚨 *CRITICAL SOS ALERT*\n\nUser: ${newRequest.contactPerson}\nLocation: https://www.google.com/maps?q=${lat},${lng}\nStatus: IMMEDIATE RESPONSE REQUIRED`;
-
-      try {
-        await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            chat_id: chatID,
-            text: msg,
-            parse_mode: 'Markdown'
-          })
-        });
-      } catch (err) {
-        console.error("Telegram API connection failed:", err);
-      }
-
-      showToast("🚨 SOS EMERGENCY BROADCAST SUCCESSFUL! Operational units briefed. Stay in your current location if safe.", 'success');
-    }, (error) => {
-      showToast(`Location Telemetry Failed: ${error.message}`, 'error');
-    });
+    showToast("🚨 SOS EMERGENCY BROADCAST SUCCESSFUL! Sent directly to Admin Command Dashboard.", 'success');
   };
 
   const handleAllocateOpen = (request) => {
     setAllocateRequest(request);
     setAllocateQtyVal('');
+    setAllocateVolunteerId(request.assignedVolunteerId ? String(request.assignedVolunteerId) : '');
     setShowAllocateModal(true);
   };
 
-  const handleAllocateSubmit = (e) => {
+  const handleAllocateSubmit = async (e) => {
     e.preventDefault();
     if (!allocateRequest) return;
-    const qty = parseInt(allocateQtyVal);
+    const qty = parseInt(allocateQtyVal, 10);
 
-    const resource = resources.find(r => r.type === allocateRequest.resourceType);
+    const targetType = allocateRequest.resourceType === 'CRITICAL SOS'
+      ? 'Rescue Team'
+      : (allocateRequest.resourceType === 'Medical' ? 'Medical Supplies' : allocateRequest.resourceType);
+    const resource = resources.find(r => r.type === targetType);
     if (!resource) {
       showToast("Error: Resource mapping node missing.", 'error');
       return;
@@ -1585,57 +1932,82 @@ export default function Home() {
       return;
     }
 
-    setResources(prev => prev.map(r => r.type === allocateRequest.resourceType ? { ...r, availableQuantity: r.availableQuantity - qty } : r));
+    const selectedVol = allocateVolunteerId
+      ? volunteers.find(v => String(v.id) === String(allocateVolunteerId))
+      : null;
 
-    let updatedReq = null;
-    setRequests(prev => prev.map(req => {
-      if (req.id === allocateRequest.id) {
-        const pending = req.quantityPending - qty;
-        const allocated = (req.quantityAllocated || 0) + qty;
-        const status = pending === 0 ? 'allocated' : 'partial';
-        updatedReq = {
-          ...req,
-          quantityAllocated: allocated,
-          quantityPending: pending,
-          status
-        };
-        return updatedReq;
-      }
-      return req;
-    }));
+    setResources(prev => prev.map(r => r.type === targetType ? { ...r, availableQuantity: r.availableQuantity - qty } : r));
+
+    const pending = allocateRequest.quantityPending - qty;
+    const allocated = (allocateRequest.quantityAllocated || 0) + qty;
+    const status = pending === 0 ? 'allocated' : 'partial';
+    const updatedReq = {
+      ...allocateRequest,
+      quantityAllocated: allocated,
+      quantityPending: pending,
+      status,
+      dispatchStatus: 'yet_to_dispatch',
+      allocatedAt: new Date().toISOString(),
+      completedByVolunteerId: null,
+      completedByVolunteerName: null,
+      completedBySpecialty: null,
+      ...(selectedVol ? {
+        assignedVolunteerId: selectedVol.id,
+        assignedVolunteerName: selectedVol.name,
+        assignedVolunteerSpecialty: selectedVol.specialty || selectedVol.role
+      } : {})
+    };
+
+    setRequests(prev => prev.map(req => req.id === allocateRequest.id ? updatedReq : req));
+
+    if (selectedVol) {
+      setVolunteers(prev => prev.map(v => v.id === selectedVol.id ? { ...v, status: 'busy' } : v));
+      fetch('/api/volunteers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: selectedVol.id, name: selectedVol.name, status: 'busy' })
+      }).catch(err => console.warn("Failed to update volunteer status:", err));
+    }
 
     // Update server DB persistently
-    if (updatedReq) {
-      fetch('/api/requests', {
+    try {
+      const res = await fetch('/api/requests', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updatedReq)
-      }).catch(err => console.error("Error saving allocation to server:", err));
+      });
+      if (!res.ok) throw new Error('Server sync failed');
+    } catch (err) {
+      console.error("Error saving allocation to server:", err);
     }
 
     setShowAllocateModal(false);
     setAllocateRequest(null);
-    showToast('Logistics allocation logged successfully.', 'success');
+    setAllocateVolunteerId('');
+    showToast(
+      selectedVol
+        ? `Logistics allocation logged & dispatched to ${selectedVol.name}!`
+        : 'Logistics allocation logged!',
+      'success'
+    );
   };
 
-  const handleMarkResolved = (requestId) => {
+  const handleMarkResolved = async (requestId) => {
     if (confirm("Verify request resolution and close incident file?")) {
-      let updatedReq = null;
-      setRequests(prev => prev.map(req => {
-        if (req.id === requestId) {
-          updatedReq = { ...req, status: 'resolved', resolvedAt: new Date().toISOString() };
-          return updatedReq;
-        }
-        return req;
-      }));
+      const target = requests.find(r => r.id === requestId);
+      if (!target) return;
+      const updatedReq = { ...target, status: 'resolved', resolvedAt: new Date().toISOString() };
+      setRequests(prev => prev.map(req => req.id === requestId ? updatedReq : req));
 
       // Update server DB persistently
-      if (updatedReq) {
-        fetch('/api/requests', {
+      try {
+        await fetch('/api/requests', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(updatedReq)
-        }).catch(err => console.error("Error resolving request on server:", err));
+        });
+      } catch (err) {
+        console.error("Error resolving request on server:", err);
       }
     }
   };
@@ -1704,6 +2076,346 @@ export default function Home() {
   };
 
 
+  // System Maintenance Admin (Role 4) Effects & Handlers
+  useEffect(() => {
+    if (currentUser?.role === 'Maintenance') {
+      let isSubscribed = true;
+
+      const pollHealth = async () => {
+        try {
+          const t0 = Date.now();
+          const [telRes, smsRes, reqRes, volRes, mapRes, spamRes] = await Promise.allSettled([
+            fetch('/api/telemetry'),
+            fetch('/api/surakshasetu-sms'),
+            fetch('/api/requests'),
+            fetch('/api/volunteers'),
+            fetch('/api/offline-maps'),
+            fetch('/api/anti-spam')
+          ]);
+
+          const telData = telRes.status === 'fulfilled' && telRes.value.ok ? await telRes.value.json() : null;
+          const smsArr = smsRes.status === 'fulfilled' && smsRes.value.ok ? await smsRes.value.json() : [];
+          const reqArr = reqRes.status === 'fulfilled' && reqRes.value.ok ? await reqRes.value.json() : [];
+          const volArr = volRes.status === 'fulfilled' && volRes.value.ok ? await volRes.value.json() : [];
+          const mapArr = mapRes.status === 'fulfilled' && mapRes.value.ok ? await mapRes.value.json() : [];
+          const spamObj = spamRes.status === 'fulfilled' && spamRes.value.ok ? await spamRes.value.json() : null;
+
+          const totalLatency = Math.max(12, Math.round((Date.now() - t0) / 6));
+
+          if (!isSubscribed) return;
+
+          setSystemHealth({
+            telemetry: {
+              status: telRes.status === 'fulfilled' && telRes.value.ok ? 'Online' : 'Degraded',
+              latency: Math.round(totalLatency * 0.9),
+              count: Array.isArray(telData) ? telData.length : (telData ? 1 : 0),
+              nodeCount: telData?.nodeId ? 1 : (Array.isArray(telData) ? telData.length : 1)
+            },
+            sms: {
+              status: smsRes.status === 'fulfilled' && smsRes.value.ok ? 'Online' : 'Standby',
+              latency: Math.round(totalLatency * 1.1),
+              count: Array.isArray(smsArr) ? smsArr.length : 0
+            },
+            requests: {
+              status: reqRes.status === 'fulfilled' && reqRes.value.ok ? 'Online' : 'Degraded',
+              latency: totalLatency,
+              count: Array.isArray(reqArr) ? reqArr.length : 0
+            },
+            volunteers: {
+              status: volRes.status === 'fulfilled' && volRes.value.ok ? 'Online' : 'Degraded',
+              latency: Math.round(totalLatency * 0.8),
+              count: Array.isArray(volArr) ? volArr.length : 0
+            },
+            offlineMaps: {
+              status: mapRes.status === 'fulfilled' && mapRes.value.ok ? 'Online' : 'Local Only',
+              latency: Math.round(totalLatency * 0.7),
+              count: Array.isArray(mapArr) ? mapArr.length : 0
+            },
+            antiSpam: {
+              status: spamRes.status === 'fulfilled' && spamRes.value.ok ? 'Online' : 'Inactive',
+              latency: Math.round(totalLatency * 0.6),
+              count: (spamObj?.blockedNumbers?.length || 0) + (spamObj?.spamKeywords?.length || 0)
+            },
+            lastChecked: new Date().toLocaleTimeString()
+          });
+
+          if (Array.isArray(mapArr) && mapArr.length > 0) {
+            setOfflineMapPackages(mapArr);
+          }
+          if (spamObj && spamObj.blockedNumbers) {
+            setAntiSpamConfig(spamObj);
+          }
+          if (Array.isArray(volArr) && volArr.length > 0) {
+            setVolunteers(volArr);
+          }
+          if (Array.isArray(reqArr) && reqArr.length > 0) {
+            setRequests(reqArr);
+          }
+        } catch (e) {
+          console.error('System health check error:', e);
+        }
+      };
+
+      pollHealth();
+      const interval = setInterval(pollHealth, 10000);
+      return () => {
+        isSubscribed = false;
+        clearInterval(interval);
+      };
+    }
+  }, [currentUser]);
+
+  const handleForceRefreshCaches = async () => {
+    setIsHealthRefreshing(true);
+    try {
+      const [telRes, smsRes, reqRes, volRes, mapRes, spamRes] = await Promise.allSettled([
+        fetch('/api/telemetry'),
+        fetch('/api/surakshasetu-sms'),
+        fetch('/api/requests'),
+        fetch('/api/volunteers'),
+        fetch('/api/offline-maps'),
+        fetch('/api/anti-spam')
+      ]);
+      if (reqRes.status === 'fulfilled' && reqRes.value.ok) {
+        const reqData = await reqRes.value.json();
+        if (Array.isArray(reqData)) setRequests(reqData);
+      }
+      if (volRes.status === 'fulfilled' && volRes.value.ok) {
+        const volData = await volRes.value.json();
+        if (Array.isArray(volData)) setVolunteers(volData);
+      }
+      if (mapRes.status === 'fulfilled' && mapRes.value.ok) {
+        const mapData = await mapRes.value.json();
+        if (Array.isArray(mapData)) setOfflineMapPackages(mapData);
+      }
+      if (spamRes.status === 'fulfilled' && spamRes.value.ok) {
+        const spamData = await spamRes.value.json();
+        if (spamData?.blockedNumbers) setAntiSpamConfig(spamData);
+      }
+      showToast("All system API endpoints and caches refreshed successfully!", "success");
+    } catch (err) {
+      console.error(err);
+      showToast("Refresh completed with minor network warnings", "warning");
+    } finally {
+      setIsHealthRefreshing(false);
+    }
+  };
+
+  const handleClearStaleRecords = () => {
+    const resolvedCount = requests.filter(r => r.status === 'resolved').length;
+    setRequests(prev => prev.filter(r => r.status !== 'resolved'));
+    showToast(`Cleaned ${resolvedCount} stale resolved incident records from memory queue.`, "success");
+  };
+
+  const handleExportSystemSnapshot = () => {
+    const snapshot = {
+      exportedAt: new Date().toISOString(),
+      node: "HQ Emergency Operations Center - Tumkur",
+      systemHealth,
+      telemetrySnapshot: sensorData,
+      activeRequestsCount: requests.length,
+      activeRequests: requests,
+      registeredVolunteersCount: volunteers.length,
+      registeredVolunteers: volunteers,
+      offlineMapPackages,
+      antiSpamConfig
+    };
+    const blob = new Blob([JSON.stringify(snapshot, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `suraksha_system_state_snapshot_${Date.now()}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast("System State JSON Snapshot generated and exported!", "success");
+  };
+
+  const handleMaintenanceVolunteerOnboard = async (e) => {
+    e.preventDefault();
+    if (!maintVolName.trim() || !maintVolPhone.trim()) {
+      showToast("Please enter Volunteer Name and Contact Phone", "error");
+      return;
+    }
+    setIsOnboardingSaving(true);
+    try {
+      const newVol = {
+        name: maintVolName.trim(),
+        role: maintVolSpecialty,
+        specialty: maintVolSpecialty,
+        phone: maintVolPhone.trim(),
+        sector: maintVolSector.trim() || 'Tumkur Sector',
+        docNumber: maintVolDocNumber.trim() || `CRED-${Date.now().toString().slice(-6)}`,
+        verified: false,
+        status: "pending",
+        lat: 13.3409,
+        lng: 77.1010,
+        createdAt: new Date().toISOString()
+      };
+
+      const res = await fetch('/api/volunteers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newVol)
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data.volunteers) {
+          setVolunteers(data.volunteers);
+        } else if (data.volunteer) {
+          setVolunteers(prev => [data.volunteer, ...prev]);
+        }
+        setMaintVolName('');
+        setMaintVolPhone('');
+        setMaintVolDocNumber('');
+        showToast("New Field Volunteer onboarded in PENDING state. Awaiting Govt Official (Role 1) verification.", "success");
+      } else {
+        showToast("Failed to save volunteer to backend", "error");
+      }
+    } catch (err) {
+      console.error(err);
+      showToast("Error onboarding volunteer", "error");
+    } finally {
+      setIsOnboardingSaving(false);
+    }
+  };
+
+  const handleSyncOfflineMap = async (pkgId) => {
+    setSyncingMapId(pkgId);
+    try {
+      const res = await fetch('/api/offline-maps', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'sync', id: pkgId })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.packages) setOfflineMapPackages(data.packages);
+        showToast("Offline map package synchronized and cached successfully!", "success");
+      } else {
+        showToast("Failed to sync offline map package", "error");
+      }
+    } catch (err) {
+      console.error(err);
+      showToast("Error syncing offline map", "error");
+    } finally {
+      setSyncingMapId(null);
+    }
+  };
+
+  const handleAddBlockedNumber = async (e) => {
+    e.preventDefault();
+    if (!newBlockedNumberInput.trim()) return;
+    try {
+      const res = await fetch('/api/anti-spam', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'addNumber', number: newBlockedNumberInput.trim() })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.config) setAntiSpamConfig(data.config);
+        setNewBlockedNumberInput('');
+        showToast("Number added to anti-spam blocklist", "success");
+      }
+    } catch (err) {
+      console.error(err);
+      showToast("Failed to update blocked numbers", "error");
+    }
+  };
+
+  const handleRemoveBlockedNumber = async (num) => {
+    try {
+      const res = await fetch('/api/anti-spam', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'removeNumber', number: num })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.config) setAntiSpamConfig(data.config);
+        showToast("Number removed from blocklist", "success");
+      }
+    } catch (err) {
+      console.error(err);
+      showToast("Failed to remove number", "error");
+    }
+  };
+
+  const handleAddSpamKeyword = async (e) => {
+    e.preventDefault();
+    if (!newSpamKeywordInput.trim()) return;
+    try {
+      const res = await fetch('/api/anti-spam', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'addKeyword', keyword: newSpamKeywordInput.trim() })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.config) setAntiSpamConfig(data.config);
+        setNewSpamKeywordInput('');
+        showToast("Spam keyword pattern added to active filter", "success");
+      }
+    } catch (err) {
+      console.error(err);
+      showToast("Failed to add spam keyword", "error");
+    }
+  };
+
+  const handleRemoveSpamKeyword = async (kw) => {
+    try {
+      const res = await fetch('/api/anti-spam', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'removeKeyword', keyword: kw })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.config) setAntiSpamConfig(data.config);
+        showToast("Keyword removed from filter", "success");
+      }
+    } catch (err) {
+      console.error(err);
+      showToast("Failed to remove keyword", "error");
+    }
+  };
+
+  const handleToggleRateLimit = async () => {
+    const nextVal = !antiSpamConfig.rateLimitEnabled;
+    try {
+      const res = await fetch('/api/anti-spam', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'updateSettings', rateLimitEnabled: nextVal, rateLimitWindowSeconds: antiSpamConfig.rateLimitWindowSeconds })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.config) setAntiSpamConfig(data.config);
+        showToast(`Duplicate SMS suppression ${nextVal ? 'enabled' : 'disabled'}`, "success");
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleRateLimitWindowChange = async (newSecs) => {
+    const val = parseInt(newSecs) || 30;
+    try {
+      const res = await fetch('/api/anti-spam', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'updateSettings', rateLimitEnabled: antiSpamConfig.rateLimitEnabled, rateLimitWindowSeconds: val })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.config) setAntiSpamConfig(data.config);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   // ML priority live display calculations
   const userPriorityResult = useMemo(() => {
     if (!userResourceType) return { priorityClass: 'low', mlConfidence: 0 };
@@ -1770,14 +2482,40 @@ export default function Home() {
                       <button type="submit" className="btn btn-primary" style={{ width: '100%', marginTop: '10px' }}>
                         Login
                       </button>
-                      <button
-                        type="button"
-                        className="btn btn-secondary"
-                        onClick={fillDemoCredentials}
-                        style={{ width: '100%', marginTop: '8px', fontSize: '13px', borderBottomWidth: '2px' }}
-                      >
-                        Use Demo Admin Credentials
-                      </button>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginTop: '8px' }}>
+                        <button
+                          type="button"
+                          className="btn btn-secondary"
+                          onClick={() => fillDemoCredentials('1', '1')}
+                          style={{ width: '100%', fontSize: '12px', borderBottomWidth: '2px', padding: '8px 6px' }}
+                        >
+                          Govt Official (1 / 1)
+                        </button>
+                        <button
+                          type="button"
+                          className="btn btn-secondary"
+                          onClick={() => fillDemoCredentials('2', '2')}
+                          style={{ width: '100%', fontSize: '12px', borderBottomWidth: '2px', padding: '8px 6px' }}
+                        >
+                          Victim / Officer (2 / 2)
+                        </button>
+                        <button
+                          type="button"
+                          className="btn btn-secondary"
+                          onClick={() => fillDemoCredentials('3', '3')}
+                          style={{ width: '100%', fontSize: '12px', borderBottomWidth: '2px', padding: '8px 6px', borderColor: '#3b82f6', color: '#1d4ed8', fontWeight: '600' }}
+                        >
+                          Volunteer (3 / 3)
+                        </button>
+                        <button
+                          type="button"
+                          className="btn btn-secondary"
+                          onClick={() => fillDemoCredentials('4', '4')}
+                          style={{ width: '100%', fontSize: '12px', borderBottomWidth: '2px', padding: '8px 6px', borderColor: '#10b981', color: '#047857', fontWeight: '600' }}
+                        >
+                          Maintenance (4 / 4)
+                        </button>
+                      </div>
                       {authError && <div className="error-message" style={{ display: 'block' }}>{authError}</div>}
                     </form>
                     <div className="auth-link">
@@ -1843,7 +2581,7 @@ export default function Home() {
                         <label className={`role-btn ${regRole === 'Admin' ? 'active' : ''}`} onClick={() => setRegRole('Admin')}>
                           <input type="radio" name="regRole" value="Admin" checked={regRole === 'Admin'} readOnly />
                           <i className="fa-solid fa-user-gear role-icon"></i>
-                          <span>Admin</span>
+                          <span>Govt Official</span>
                           <small>System management</small>
                         </label>
                       </div>
@@ -1892,19 +2630,10 @@ export default function Home() {
                 title="Download Android Mobile Mesh APK (Google Nearby BLE + Wi-Fi Direct)"
               >
                 <i className="fas fa-mobile-screen"></i>
-                <span>{lang === 'kn' ? 'ಮೊಬೈಲ್ APK ಡೌನ್‌ಲೋಡ್' : 'Download Mobile APK'}</span>
+                <span>Download Mobile APK</span>
               </a>
-              <button
-                className="btn btn-secondary btn-small"
-                id="langToggleAdmin"
-                onClick={() => setLang(prev => prev === 'en' ? 'kn' : 'en')}
-                style={{ padding: '10px 12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
-              >
-                <i className="fas fa-language"></i>
-                <span>{lang === 'en' ? 'ಕನ್ನಡ' : 'English'}</span>
-              </button>
               <div className="user-info">
-                <span id="userRole" style={{ fontWeight: 'bold', color: 'var(--color-primary)' }}>{t.admin}</span>
+                <span id="userRole" style={{ fontWeight: 'bold', color: '#ffffff' }}>{t.admin}</span>
               </div>
               <button className="btn btn-logout btn-small" onClick={handleLogout}>{t.logout}</button>
             </div>
@@ -1975,6 +2704,7 @@ export default function Home() {
                   onMapClick={handleMapClick}
                   selectedLocation={selectedLocation}
                   routeCoordinates={routeCoordinates}
+                  smsAlerts={smsData}
                 />
               </div>
             </div>
@@ -2006,7 +2736,24 @@ export default function Home() {
                             <td>{req.contactPerson || 'N/A'}</td>
                             <td className="contact-phone">{req.contactPhone || 'N/A'}</td>
                             <td><span className={`priority-badge priority-${req.mlPriorityClass}`}>{req.mlPriorityClass.toUpperCase()}</span></td>
-                            <td><span className={`status-badge status-${req.status}`}>{req.status.toUpperCase()}</span></td>
+                            <td>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'flex-start' }}>
+                                <span className={`status-badge status-${req.status}`}>{req.status.toUpperCase()}</span>
+                                {req.dispatchStatus === 'completed' ? (
+                                  <span style={{ fontSize: '11px', fontWeight: '700', color: '#15803d', background: '#dcfce7', border: '1px solid #86efac', padding: '3px 7px', borderRadius: '4px', display: 'inline-block' }}>
+                                    ✓ Allocated by {req.completedByVolunteerName || 'Volunteer'}{req.completedBySpecialty ? ` (${req.completedBySpecialty})` : ''}
+                                  </span>
+                                ) : req.assignedVolunteerName ? (
+                                  <span style={{ fontSize: '10.5px', fontWeight: '700', color: '#b45309', background: '#fef3c7', border: '1px solid #fcd34d', padding: '2px 6px', borderRadius: '4px', display: 'inline-block' }}>
+                                    ⏳ Dispatched to {req.assignedVolunteerName} · Yet to Dispatch
+                                  </span>
+                                ) : (req.status === 'allocated' || req.status === 'partial') ? (
+                                  <span style={{ fontSize: '10.5px', fontWeight: '700', color: '#b45309', background: '#fef3c7', border: '1px solid #fcd34d', padding: '2px 6px', borderRadius: '4px', display: 'inline-block' }}>
+                                    ⏳ YET TO DISPATCH
+                                  </span>
+                                ) : null}
+                              </div>
+                            </td>
                             <td>
                               <div className="btn-group">
                                 <button className="btn btn-secondary btn-small" onClick={() => handleShowRoute(req)}>{t.route}</button>
@@ -2200,46 +2947,8 @@ export default function Home() {
               {/* Left Column: Live SMS Requests and Volunteers */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
 
-                {/* Live SMS Data from Google Sheets */}
-                <div className="section" style={{ margin: 0 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <h2>Live SMS Requests (Google Sheets Sync)</h2>
-                      <span style={{ fontSize: '11px', background: '#e0f2fe', color: '#0369a1', padding: '3px 8px', borderRadius: '4px', fontWeight: 'bold' }}>
-                        📞 Gateway: {process.env.NEXT_PUBLIC_HQ_GATEWAY_PHONE || '+918310353102'}
-                      </span>
-                    </div>
-                    {isSmsLoading && <span className="status-badge status-partial">Syncing...</span>}
-                  </div>
-                  {smsError ? (
-                    <div className="alert alert-danger" style={{ color: '#d32f2f', padding: '10px', background: '#ffebee', borderRadius: '5px' }}>Error loading SMS data: {smsError}</div>
-                  ) : (
-                    <div className="table-container">
-                      <table>
-                        <thead>
-                          <tr>
-                            <th>Category</th>
-                            <th>Quantity</th>
-                            <th>Location</th>
-                            <th>Notes</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {smsData.length > 0 ? smsData.map((row, idx) => (
-                            <tr key={idx}>
-                              <td>{row.Category || 'N/A'}</td>
-                              <td>{row.Quantity || 'N/A'}</td>
-                              <td>{row.Location || 'N/A'}</td>
-                              <td style={{ whiteSpace: 'pre-wrap', maxWidth: '300px' }}>{row.Notes || 'N/A'}</td>
-                            </tr>
-                          )) : (
-                            <tr><td colSpan="4" style={{ textAlign: 'center' }}>No live SMS requests found</td></tr>
-                          )}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
-                </div>
+                {/* SurakshaSetu Off-Grid SMS Gateway */}
+                <SurakshaSetuSMSPanel onAlertsUpdate={setSmsData} />
 
                 {/* Volunteer Dispatch Grid */}
                 <div className="section" id="volunteerManagementSection" style={{ margin: 0 }}>
@@ -2252,8 +2961,20 @@ export default function Home() {
                       <tbody id="volunteerTable">
                         {volunteers.map(v => (
                           <tr key={v.id}>
-                            <td><strong>{v.name}</strong></td>
-                            <td>{v.role}</td>
+                            <td>
+                              <strong>{v.name}</strong>
+                              {v.verified && (
+                                <span style={{ marginLeft: '6px', fontSize: '10px', fontWeight: '700', color: '#15803d', background: '#dcfce7', border: '1px solid #86efac', padding: '2px 6px', borderRadius: '4px' }}>
+                                  ✓ Verified
+                                </span>
+                              )}
+                              {v.docFileName && (
+                                <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>
+                                  ID Doc: {v.docFileName}
+                                </div>
+                              )}
+                            </td>
+                            <td>{v.specialty || v.role}</td>
                             <td><span className={`status-badge status-${v.status}`}>{v.status.toUpperCase()}</span></td>
                             <td>{v.phone}</td>
                             <td>
@@ -2289,7 +3010,7 @@ export default function Home() {
                           <strong>Need:</strong> {selectedTriageRequest.resourceType} ({selectedTriageRequest.individualsAffected} affected)
                         </div>
                         <div style={{ fontSize: '12px', marginTop: '4px', fontStyle: 'italic', color: '#555' }}>
-                          "{selectedTriageRequest.description}"
+                          &quot;{selectedTriageRequest.description}&quot;
                         </div>
                       </div>
 
@@ -2545,7 +3266,14 @@ export default function Home() {
                     {sortedRequests.resolved.map(req => (
                       <tr key={req.id || req.requestId}>
                         <td><strong>{req.requestId}</strong></td>
-                        <td>{req.resourceType}</td>
+                        <td>
+                          <div>{req.resourceType}</div>
+                          {req.completedByVolunteerName && (
+                            <div style={{ fontSize: '11px', color: '#15803d', fontWeight: '600' }}>
+                              ✓ Allocated by {req.completedByVolunteerName}{req.completedBySpecialty ? ` (${req.completedBySpecialty})` : ''}
+                            </div>
+                          )}
+                        </td>
                         <td style={{ fontSize: '12px', maxWidth: '150px' }}>{req.address || `Lat: ${req.lat.toFixed(4)}, Lng: ${req.lng.toFixed(4)}`}</td>
                         <td>{req.contactPerson || 'N/A'}</td>
                         <td>{req.contactPhone || 'N/A'}</td>
@@ -2594,17 +3322,8 @@ export default function Home() {
                 title="Download Android Mobile Mesh APK (Google Nearby BLE + Wi-Fi Direct)"
               >
                 <i className="fas fa-mobile-screen"></i>
-                <span>{lang === 'kn' ? 'ಮೊಬೈಲ್ APK ಡೌನ್‌ಲೋಡ್' : 'Download Mobile APK'}</span>
+                <span>Download Mobile APK</span>
               </a>
-              <button
-                className="btn btn-secondary btn-small"
-                id="langToggleUser"
-                onClick={() => setLang(prev => prev === 'en' ? 'kn' : 'en')}
-                style={{ padding: '10px 12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
-              >
-                <i className="fas fa-language"></i>
-                <span>{lang === 'en' ? 'ಕನ್ನಡ' : 'English'}</span>
-              </button>
               <button
                 className="btn btn-secondary btn-small"
                 id="mobileViewToggle"
@@ -2626,7 +3345,7 @@ export default function Home() {
               {/* User map coordinate picker */}
               <div className="map-section">
                 <h2><i className="fas fa-map-marked-alt"></i> {t.location_map}</h2>
-                <div style={{ flex: 1, width: '100%', border: '1px solid #ddd', borderRadius: '12px', overflow: 'hidden' }}>
+                <div style={{ height: '560px', minHeight: '500px', width: '100%', border: '1px solid #ddd', borderRadius: '12px', overflow: 'hidden' }}>
                   <MapComponent
                     lat={currentBaseLocation.lat}
                     lng={currentBaseLocation.lng}
@@ -2636,6 +3355,7 @@ export default function Home() {
                     onMapClick={handleMapClick}
                     selectedLocation={selectedLocation}
                     routeCoordinates={routeCoordinates}
+                    smsAlerts={smsData}
                   />
                 </div>
               </div>
@@ -2720,6 +3440,11 @@ export default function Home() {
                 </form>
 
               </div>
+            </div>
+
+            {/* SurakshaSetu Off-Grid SMS Gateway */}
+            <div style={{ marginBottom: '24px' }}>
+              <SurakshaSetuSMSPanel onAlertsUpdate={setSmsData} />
             </div>
 
             {/* Weather / Sensors / Volunteers Accordions */}
@@ -2874,6 +3599,1188 @@ export default function Home() {
         </div>
       )}
 
+      {/* 3.5 VOLUNTEER PORTAL (ONBOARDING VERIFICATION + DISPATCH DASHBOARD) */}
+      {currentUser && currentUser.role === 'Volunteer' && (
+        <div id="volunteerDashboard" className="dashboard" style={{ display: 'block' }}>
+
+          {/* Header (Exact Same Blue & White Theme) */}
+          <div className="header">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+              <div style={{ width: '56px', height: '56px', borderRadius: '12px', background: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid rgba(255,255,255,0.4)', flexShrink: 0 }}>
+                <i className="fas fa-shield-halved" style={{ fontSize: '28px', color: '#ffffff' }}></i>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <h1 style={{ margin: 0, fontSize: '48px', letterSpacing: '1px', lineHeight: '1.2' }}>{t.title}</h1>
+                <span style={{ fontSize: '20px', opacity: 0.9, fontWeight: 'normal' }}>{t.base}</span>
+              </div>
+            </div>
+            <div className="header-right">
+              <div className="user-info">
+                <span id="volunteerRoleBadge" style={{ fontWeight: 'bold', color: '#ffffff' }}>
+                  {volunteerProfile.isVerified
+                    ? `✓ ${volunteerProfile.name} (${volunteerProfile.specialty})`
+                    : 'Volunteer · Verification Required'}
+                </span>
+              </div>
+              <button className="btn btn-logout btn-small" onClick={handleLogout}>{t.logout}</button>
+            </div>
+          </div>
+
+          <div className="container">
+            {!volunteerProfile.isVerified ? (
+              /* Step 1: Specialty & Required Document Verification */
+              <div className="section" id="volunteerVerificationCard" style={{ maxWidth: '720px', margin: '32px auto', padding: '28px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px', borderBottom: '2px solid var(--color-border)', paddingBottom: '14px' }}>
+                  <div style={{ width: '46px', height: '46px', borderRadius: '10px', background: 'linear-gradient(135deg, #2563eb 0%, #60a5fa 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ffffff', fontSize: '20px' }}>
+                    <i className="fas fa-id-card"></i>
+                  </div>
+                  <div>
+                    <h2 style={{ margin: 0, color: 'var(--color-primary)' }}>Volunteer Credential &amp; Specialty Verification</h2>
+                    <p style={{ margin: '2px 0 0', fontSize: '13.5px', color: 'var(--color-text-secondary)', fontWeight: '400' }}>
+                      Select your area of specialty or profession and upload the required official document to activate dispatch access.
+                    </p>
+                  </div>
+                </div>
+
+                {volunteers.filter(v => v.verified).length > 0 && (
+                  <div style={{ marginTop: '14px', padding: '14px', borderRadius: '10px', background: '#f8fafc', border: '1px solid var(--color-border)' }}>
+                    <div style={{ fontWeight: '700', fontSize: '13px', color: 'var(--color-primary)', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <i className="fas fa-user-check"></i> Already Verified? Continue as Existing Volunteer Profile:
+                    </div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                      {volunteers.filter(v => v.verified).map(vol => (
+                        <button
+                          key={vol.id}
+                          type="button"
+                          className="btn btn-secondary btn-small"
+                          onClick={() => handleSelectExistingVolunteer(vol)}
+                          style={{ width: 'auto', padding: '7px 12px', fontSize: '12.5px', fontWeight: '600', borderColor: '#93c5fd', background: '#eff6ff', color: '#1e40af' }}
+                        >
+                          <i className="fas fa-check-circle" style={{ color: '#16a34a', marginRight: '6px' }}></i>
+                          {vol.name} ({vol.specialty || vol.role})
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <form onSubmit={handleVolunteerVerifySubmit} style={{ marginTop: '18px' }}>
+                  <div className="form-row">
+                    <div className="form-group">
+                      <label htmlFor="volunteerNameInput">Full Name *</label>
+                      <input
+                        id="volunteerNameInput"
+                        type="text"
+                        className="form-control"
+                        placeholder="e.g., Dr. Sandeep / Cadet Priya"
+                        required
+                        value={volunteerProfile.name}
+                        onChange={(e) => setVolunteerProfile(prev => ({ ...prev, name: e.target.value }))}
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label htmlFor="volunteerPhoneInput">Contact Number *</label>
+                      <input
+                        id="volunteerPhoneInput"
+                        type="tel"
+                        className="form-control"
+                        placeholder="e.g., 9876543210"
+                        required
+                        value={volunteerProfile.phone}
+                        onChange={(e) => setVolunteerProfile(prev => ({ ...prev, phone: e.target.value }))}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="form-group" style={{ marginTop: '10px' }}>
+                    <label htmlFor="volunteerSpecialtySelect">Area of Specialty / Profession *</label>
+                    <select
+                      id="volunteerSpecialtySelect"
+                      className="form-control"
+                      required
+                      style={{ height: '50px', fontSize: '15px' }}
+                      value={volunteerProfile.specialty}
+                      onChange={(e) => setVolunteerProfile(prev => ({ ...prev, specialty: e.target.value, docFileName: '', docFileSize: '' }))}
+                    >
+                      <option value="">Select your specialty / profession</option>
+                      {VOLUNTEER_SPECIALTIES.map(spec => (
+                        <option key={spec.value} value={spec.value}>{spec.label}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {(() => {
+                    const selectedSpec = VOLUNTEER_SPECIALTIES.find(s => s.value === volunteerProfile.specialty);
+                    return (
+                      <div style={{ marginTop: '16px', padding: '16px', borderRadius: '10px', background: '#eff6ff', border: '1px solid #bfdbfe' }}>
+                        <div style={{ fontWeight: '700', color: '#1e40af', fontSize: '14px', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <i className="fas fa-file-shield"></i>
+                          <span>
+                            {selectedSpec
+                              ? `Required Verification Document: ${selectedSpec.docLabel}`
+                              : 'Select a specialty above to see the required verification document'}
+                          </span>
+                        </div>
+                        <p style={{ fontSize: '12.5px', color: '#334155', marginBottom: '12px', fontWeight: '400' }}>
+                          {selectedSpec
+                            ? selectedSpec.docHint
+                            : 'For example: Doctors upload their Official Doctor ID / Medical Council card; Nurses upload Nursing Council ID; NCC/NSS Cadets upload Cadet ID.'}
+                        </p>
+
+                        <div className="form-group">
+                          <label htmlFor="volunteerDocNumber">Official ID / License Number (Optional)</label>
+                          <input
+                            id="volunteerDocNumber"
+                            type="text"
+                            className="form-control"
+                            placeholder={selectedSpec ? `Enter ${selectedSpec.value} ID number` : 'Enter official ID number'}
+                            value={volunteerProfile.docNumber}
+                            onChange={(e) => setVolunteerProfile(prev => ({ ...prev, docNumber: e.target.value }))}
+                          />
+                        </div>
+
+                        <div className="form-group" style={{ marginTop: '10px' }}>
+                          <label htmlFor="volunteerDocUpload">
+                            Upload Verification Document *
+                          </label>
+                          <input
+                            id="volunteerDocUpload"
+                            type="file"
+                            className="form-control"
+                            accept="image/*,.pdf"
+                            required
+                            onChange={(e) => {
+                              const file = e.target.files && e.target.files[0];
+                              if (file) {
+                                setVolunteerProfile(prev => ({
+                                  ...prev,
+                                  docFileName: file.name,
+                                  docFileSize: `${(file.size / 1024).toFixed(1)} KB`
+                                }));
+                              }
+                            }}
+                          />
+                        </div>
+
+                        {volunteerProfile.docFileName && (
+                          <div style={{ marginTop: '10px', padding: '8px 12px', borderRadius: '6px', background: '#ffffff', border: '1px solid #93c5fd', display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '13px', color: '#1d4ed8' }}>
+                            <span><i className="fas fa-check-circle" style={{ marginRight: '6px', color: '#16a34a' }}></i> Uploaded: <strong>{volunteerProfile.docFileName}</strong></span>
+                            <span style={{ color: '#64748b', fontSize: '12px' }}>{volunteerProfile.docFileSize}</span>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
+
+                  <button type="submit" className="btn btn-primary" id="verifyVolunteerBtn" style={{ marginTop: '18px', height: '54px', fontSize: '16px', fontWeight: 'bold' }}>
+                    <i className="fas fa-shield-check" style={{ marginRight: '8px' }}></i>
+                    Verify Document &amp; Enter Volunteer Dashboard
+                  </button>
+                </form>
+              </div>
+            ) : (
+              /* Step 2: Verified Volunteer Dispatch Dashboard */
+              (() => {
+                const matchesCurrentVolunteer = (req, nameKey, idKey) => {
+                  if (volunteerProfile.id && req[idKey] && String(req[idKey]) === String(volunteerProfile.id)) {
+                    return true;
+                  }
+                  if (volunteerProfile.name && req[nameKey]) {
+                    return req[nameKey].trim().toLowerCase() === volunteerProfile.name.trim().toLowerCase();
+                  }
+                  return false;
+                };
+
+                const pendingDispatchRequests = sortedRequests.active.filter(
+                  req => matchesCurrentVolunteer(req, 'assignedVolunteerName', 'assignedVolunteerId') && req.dispatchStatus !== 'completed'
+                );
+                const completedDispatchRequests = requests.filter(
+                  req => req.dispatchStatus === 'completed' && matchesCurrentVolunteer(req, 'completedByVolunteerName', 'completedByVolunteerId')
+                );
+
+                return (
+                  <div>
+                    {/* Volunteer Verified Identity Banner */}
+                    <div className="section" style={{ marginBottom: '20px', padding: '14px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', background: 'linear-gradient(135deg, #ffffff 0%, #eff6ff 100%)' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <div style={{ width: '42px', height: '42px', borderRadius: '10px', background: '#2563eb', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>
+                          <i className="fas fa-user-check"></i>
+                        </div>
+                        <div>
+                          <div style={{ fontWeight: '700', fontSize: '16px', color: 'var(--color-primary)' }}>
+                            {volunteerProfile.name} · <span style={{ color: '#2563eb' }}>{volunteerProfile.specialty}</span>
+                          </div>
+                          <div style={{ fontSize: '12.5px', color: 'var(--color-text-secondary)' }}>
+                            Verified Document: <strong>{volunteerProfile.docFileName}</strong>
+                            {volunteerProfile.docNumber ? ` (ID: ${volunteerProfile.docNumber})` : ''}
+                          </div>
+                        </div>
+                      </div>
+                      <span style={{ fontSize: '12px', fontWeight: '700', color: '#15803d', background: '#dcfce7', border: '1px solid #86efac', padding: '6px 12px', borderRadius: '999px' }}>
+                        ✓ VERIFIED {volunteerProfile.specialty.toUpperCase()}
+                      </span>
+                    </div>
+
+                    {/* Volunteer KPI Cards */}
+                    <div className="stats-grid" style={{ display: 'grid', marginBottom: '24px' }}>
+                      <div className="stat-card">
+                        <div className="icon-container"><i className="fas fa-truck-loading"></i></div>
+                        <div className="stat-content">
+                          <h3>Yet to Dispatch</h3>
+                          <div className="value">{pendingDispatchRequests.length}</div>
+                        </div>
+                      </div>
+                      <div className="stat-card">
+                        <div className="icon-container"><i className="fas fa-clipboard-check"></i></div>
+                        <div className="stat-content">
+                          <h3>Allocations Completed</h3>
+                          <div className="value">{completedDispatchRequests.length}</div>
+                        </div>
+                      </div>
+                      <div className="stat-card">
+                        <div className="icon-container"><i className="fas fa-user-md"></i></div>
+                        <div className="stat-content">
+                          <h3>Verified Specialty</h3>
+                          <div className="value" style={{ fontSize: '22px' }}>{volunteerProfile.specialty}</div>
+                        </div>
+                      </div>
+                      <div className="stat-card">
+                        <div className="icon-container"><i className="fas fa-triangle-exclamation"></i></div>
+                        <div className="stat-content">
+                          <h3>Total Active Incidents</h3>
+                          <div className="value">{sortedRequests.active.length}</div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Resources Allocated for Dispatch (Pending / Yet to Dispatch) */}
+                    <div className="section" id="volunteerDispatchQueueSection" style={{ marginBottom: '24px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px', flexWrap: 'wrap', gap: '10px' }}>
+                        <h2 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
+                          <i className="fas fa-boxes-packing"></i> Allocated to You for Dispatch ({volunteerProfile.name})
+                        </h2>
+                        <span style={{ fontSize: '12px', fontWeight: '700', color: '#b45309', background: '#fef3c7', border: '1px solid #fcd34d', padding: '4px 10px', borderRadius: '6px' }}>
+                          {pendingDispatchRequests.length} Dispatch Pending / Yet to Dispatch
+                        </span>
+                      </div>
+
+                      {pendingDispatchRequests.length === 0 ? (
+                        <div style={{ textAlign: 'center', padding: '32px', color: 'var(--color-text-secondary)', background: 'var(--color-surface)', borderRadius: '8px', border: '1px dashed var(--color-border)' }}>
+                          <i className="fas fa-check-double" style={{ fontSize: '24px', color: '#2563eb', marginBottom: '8px', display: 'block' }}></i>
+                          No pending dispatches assigned to <strong>{volunteerProfile.name}</strong> right now. When the Govt Official dispatches a resource to you, it will appear here automatically.
+                        </div>
+                      ) : (
+                        <div className="table-container">
+                          <table>
+                            <thead>
+                              <tr>
+                                <th>Request ID</th>
+                                <th>Resource Allocated</th>
+                                <th>Qty Allocated</th>
+                                <th>Destination / Contact</th>
+                                <th>Priority</th>
+                                <th>Dispatch Status</th>
+                                <th>Actions</th>
+                              </tr>
+                            </thead>
+                            <tbody id="volunteerPendingTable">
+                              {pendingDispatchRequests.map(req => (
+                                <tr key={req.id || req.requestId}>
+                                  <td><strong>{req.requestId}</strong></td>
+                                  <td>
+                                    <div style={{ fontWeight: '700', color: 'var(--color-primary)' }}>{req.resourceType}</div>
+                                    <div style={{ fontSize: '11px', color: '#2563eb', fontWeight: '600' }}>Allocated to you ({volunteerProfile.name}) for Dispatch</div>
+                                  </td>
+                                  <td><strong>{req.quantityAllocated || req.quantityRequested}</strong> / {req.quantityRequested}</td>
+                                  <td style={{ fontSize: '12.5px', maxWidth: '200px' }}>
+                                    <div>{req.address || `Lat: ${req.lat.toFixed(4)}, Lng: ${req.lng.toFixed(4)}`}</div>
+                                    <div style={{ color: '#2563eb', fontWeight: '600' }}>{req.contactPerson || 'N/A'} · {req.contactPhone || 'N/A'}</div>
+                                  </td>
+                                  <td>
+                                    <span className={`priority-badge priority-${req.mlPriorityClass}`}>
+                                      {req.mlPriorityClass.toUpperCase()}
+                                    </span>
+                                  </td>
+                                  <td>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'flex-start' }}>
+                                      <span style={{ fontSize: '11px', fontWeight: '700', color: '#b45309', background: '#fef3c7', border: '1px solid #fcd34d', padding: '3px 8px', borderRadius: '4px' }}>
+                                        DISPATCH IS PENDING
+                                      </span>
+                                      <span style={{ fontSize: '10.5px', fontWeight: '700', color: '#1d4ed8', background: '#dbeafe', border: '1px solid #93c5fd', padding: '2px 7px', borderRadius: '4px' }}>
+                                        YET TO DISPATCH
+                                      </span>
+                                    </div>
+                                  </td>
+                                  <td>
+                                    <div className="btn-group">
+                                      <button
+                                        className="btn btn-secondary btn-small"
+                                        onClick={() => handleShowRoute(req)}
+                                      >
+                                        <i className="fas fa-route"></i> Route
+                                      </button>
+                                      <button
+                                        className="btn btn-primary btn-small"
+                                        onClick={() => handleVolunteerCompleteDispatch(req)}
+                                        style={{ fontWeight: '700' }}
+                                      >
+                                        <i className="fas fa-check"></i> Allocation Completed
+                                      </button>
+                                    </div>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Interactive Dispatch Map */}
+                    <div className="section" style={{ marginBottom: '24px' }}>
+                      <h2 style={{ marginBottom: '12px' }}><i className="fas fa-map-location-dot"></i> Live Dispatch Operations Map</h2>
+                      <div style={{ height: '420px', width: '100%', border: '1px solid #ddd', borderRadius: '12px', overflow: 'hidden' }}>
+                        <MapComponent
+                          lat={currentBaseLocation.lat}
+                          lng={currentBaseLocation.lng}
+                          name={currentBaseLocation.name}
+                          requests={requests}
+                          volunteers={volunteers}
+                          onMapClick={handleMapClick}
+                          selectedLocation={selectedLocation}
+                          routeCoordinates={routeCoordinates}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Completed Dispatches Log */}
+                    <div className="section" id="volunteerCompletedSection">
+                      <h2 style={{ marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <i className="fas fa-circle-check" style={{ color: '#16a34a' }}></i> Completed by {volunteerProfile.name} ({volunteerProfile.specialty})
+                      </h2>
+                      {completedDispatchRequests.length === 0 ? (
+                        <div style={{ textAlign: 'center', padding: '20px', color: 'var(--color-text-secondary)', fontSize: '13.5px' }}>
+                          No completed allocations yet. Click &ldquo;Allocation Completed&rdquo; on any pending dispatch above once delivered.
+                        </div>
+                      ) : (
+                        <div className="table-container">
+                          <table>
+                            <thead>
+                              <tr>
+                                <th>Request ID</th>
+                                <th>Resource</th>
+                                <th>Qty</th>
+                                <th>Allocated By Volunteer</th>
+                                <th>Status</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {completedDispatchRequests.map(req => (
+                                <tr key={req.id || req.requestId}>
+                                  <td><strong>{req.requestId}</strong></td>
+                                  <td>{req.resourceType}</td>
+                                  <td>{req.quantityAllocated || req.quantityRequested}/{req.quantityRequested}</td>
+                                  <td>
+                                    <strong>{req.completedByVolunteerName || volunteerProfile.name}</strong>
+                                    {req.completedBySpecialty ? ` (${req.completedBySpecialty})` : ''}
+                                  </td>
+                                  <td>
+                                    <span style={{ fontSize: '11px', fontWeight: '700', color: '#15803d', background: '#dcfce7', border: '1px solid #86efac', padding: '4px 8px', borderRadius: '4px' }}>
+                                      ✓ ALLOCATION COMPLETED
+                                    </span>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })()
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* 3.6 SYSTEM MAINTENANCE ADMIN WORKSPACE (Strictly Scoped to 4 Capabilities) */}
+      {currentUser && currentUser.role === 'Maintenance' && (
+        <div id="maintenanceDashboard" className="dashboard" style={{ display: 'block' }}>
+          {/* Header Panel (Exact Same Tactical Blue/Dark Theme) */}
+          <div className="header">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+              <div style={{ width: '56px', height: '56px', borderRadius: '12px', background: 'rgba(16, 185, 129, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid rgba(16, 185, 129, 0.5)', flexShrink: 0 }}>
+                <i className="fas fa-screwdriver-wrench" style={{ fontSize: '26px', color: '#10b981' }}></i>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <h1 style={{ margin: 0, fontSize: '42px', letterSpacing: '1px', lineHeight: '1.2' }}>{t.title}</h1>
+                <span style={{ fontSize: '17px', opacity: 0.9, fontWeight: 'normal' }}>System Maintenance &amp; Operations Center · Tumkur HQ</span>
+              </div>
+            </div>
+            <div className="header-right">
+              <div className="user-info">
+                <span style={{ fontWeight: 'bold', color: '#10b981', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <i className="fas fa-circle-check"></i> System Maintenance Admin (4)
+                </span>
+              </div>
+              <button className="btn btn-logout btn-small" onClick={handleLogout}>{t.logout}</button>
+            </div>
+          </div>
+
+          <div className="container">
+            {/* Top Tactical Navigation Tabs for the 4 Scoped Capabilities */}
+            <div style={{ display: 'flex', gap: '10px', marginBottom: '24px', flexWrap: 'wrap', borderBottom: '2px solid var(--color-border)', paddingBottom: '14px' }}>
+              <button
+                className={`btn ${maintenanceTab === 'health' ? 'btn-primary' : 'btn-secondary'}`}
+                onClick={() => setMaintenanceTab('health')}
+                style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 18px', fontWeight: 'bold' }}
+              >
+                <i className="fas fa-heart-pulse"></i> A. System Health &amp; Telemetry
+              </button>
+              <button
+                className={`btn ${maintenanceTab === 'onboarding' ? 'btn-primary' : 'btn-secondary'}`}
+                onClick={() => setMaintenanceTab('onboarding')}
+                style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 18px', fontWeight: 'bold' }}
+              >
+                <i className="fas fa-user-plus"></i> B. Volunteer Onboarding (Add-Only)
+              </button>
+              <button
+                className={`btn ${maintenanceTab === 'offline-maps' ? 'btn-primary' : 'btn-secondary'}`}
+                onClick={() => setMaintenanceTab('offline-maps')}
+                style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 18px', fontWeight: 'bold' }}
+              >
+                <i className="fas fa-map-location"></i> C. Offline Maps Management
+              </button>
+              <button
+                className={`btn ${maintenanceTab === 'anti-spam' ? 'btn-primary' : 'btn-secondary'}`}
+                onClick={() => setMaintenanceTab('anti-spam')}
+                style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 18px', fontWeight: 'bold' }}
+              >
+                <i className="fas fa-shield-virus"></i> D. Anti-Spam &amp; Guardrails
+              </button>
+            </div>
+
+            {/* TAB A: OVERALL SYSTEM MAINTENANCE & HEALTH MONITOR */}
+            {maintenanceTab === 'health' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                {/* Header Actions Card */}
+                <div className="section" style={{ margin: 0, padding: '20px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+                    <div>
+                      <h2 style={{ margin: 0, fontSize: '22px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <i className="fas fa-tower-broadcast" style={{ color: '#10b981' }}></i>
+                        Overall System Health &amp; Maintenance Monitor
+                      </h2>
+                      <p style={{ margin: '4px 0 0', fontSize: '13px', color: 'var(--color-text-secondary)' }}>
+                        Live telemetry polling across microservices, databases, and gateway nodes. Last check: <strong>{systemHealth.lastChecked || 'Active'}</strong>
+                      </p>
+                    </div>
+                    <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                      <button
+                        className="btn btn-secondary btn-small"
+                        onClick={handleForceRefreshCaches}
+                        disabled={isHealthRefreshing}
+                        style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: '600' }}
+                      >
+                        <i className={`fas fa-rotate ${isHealthRefreshing ? 'fa-spin' : ''}`}></i>
+                        Force-Refresh Endpoints
+                      </button>
+                      <button
+                        className="btn btn-secondary btn-small"
+                        onClick={handleClearStaleRecords}
+                        style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: '600', color: '#f59e0b', borderColor: '#f59e0b' }}
+                      >
+                        <i className="fas fa-broom"></i>
+                        Clear Resolved Records
+                      </button>
+                      <button
+                        className="btn btn-primary btn-small"
+                        onClick={handleExportSystemSnapshot}
+                        style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: '600', background: '#059669', borderColor: '#047857' }}
+                      >
+                        <i className="fas fa-download"></i>
+                        Export System State JSON
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Status Cards Grid */}
+                <div className="stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '16px' }}>
+                  {/* Card 1: ESP32 Telemetry */}
+                  <div className="stat-card">
+                    <div className="icon-container" style={{ background: '#d1fae5', color: '#047857' }}>
+                      <i className="fas fa-microchip"></i>
+                    </div>
+                    <div className="stat-content">
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <h3>ESP32 Hardware Nodes</h3>
+                        <span className="status-badge status-allocated">{systemHealth.telemetry.status}</span>
+                      </div>
+                      <div className="value" style={{ fontSize: '22px' }}>{systemHealth.telemetry.nodeCount} Active Node(s)</div>
+                      <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)', marginTop: '4px' }}>
+                        Latency: <strong>{systemHealth.telemetry.latency} ms</strong> · Temp: {sensorData.temperature}°C · H2O: {sensorData.water_level}cm
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Card 2: SMS Gateway */}
+                  <div className="stat-card">
+                    <div className="icon-container" style={{ background: '#e0f2fe', color: '#0369a1' }}>
+                      <i className="fas fa-tower-cell"></i>
+                    </div>
+                    <div className="stat-content">
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <h3>SurakshaSetu SMS Gateway</h3>
+                        <span className="status-badge status-allocated">{systemHealth.sms.status}</span>
+                      </div>
+                      <div className="value" style={{ fontSize: '22px' }}>{smsData.length} Incoming Alerts</div>
+                      <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)', marginTop: '4px' }}>
+                        Latency: <strong>{systemHealth.sms.latency} ms</strong> · Gateway: {process.env.NEXT_PUBLIC_HQ_GATEWAY_PHONE || '+91-HQ-GATEWAY'}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Card 3: Disaster Requests Engine */}
+                  <div className="stat-card">
+                    <div className="icon-container" style={{ background: '#fee2e2', color: '#b91c1c' }}>
+                      <i className="fas fa-clipboard-list"></i>
+                    </div>
+                    <div className="stat-content">
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <h3>Incident Requests Store</h3>
+                        <span className="status-badge status-allocated">{systemHealth.requests.status}</span>
+                      </div>
+                      <div className="value" style={{ fontSize: '22px' }}>{requests.length} Total Incidents</div>
+                      <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)', marginTop: '4px' }}>
+                        Latency: <strong>{systemHealth.requests.latency} ms</strong> · Active: {requests.filter(r => r.status !== 'resolved').length}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Card 4: Field Volunteers Directory */}
+                  <div className="stat-card">
+                    <div className="icon-container" style={{ background: '#fef3c7', color: '#b45309' }}>
+                      <i className="fas fa-users-gear"></i>
+                    </div>
+                    <div className="stat-content">
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <h3>Volunteers Registry</h3>
+                        <span className="status-badge status-allocated">{systemHealth.volunteers.status}</span>
+                      </div>
+                      <div className="value" style={{ fontSize: '22px' }}>{volunteers.length} Field Responders</div>
+                      <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)', marginTop: '4px' }}>
+                        Latency: <strong>{systemHealth.volunteers.latency} ms</strong> · Verified: {volunteers.filter(v => v.verified).length} · Pending: {volunteers.filter(v => !v.verified).length}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Card 5: Offline Maps Packages */}
+                  <div className="stat-card">
+                    <div className="icon-container" style={{ background: '#ede9fe', color: '#6d28d9' }}>
+                      <i className="fas fa-map"></i>
+                    </div>
+                    <div className="stat-content">
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <h3>Offline GIS Packages</h3>
+                        <span className="status-badge status-allocated">{systemHealth.offlineMaps.status}</span>
+                      </div>
+                      <div className="value" style={{ fontSize: '22px' }}>{offlineMapPackages.length} Regions Cached</div>
+                      <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)', marginTop: '4px' }}>
+                        Latency: <strong>{systemHealth.offlineMaps.latency} ms</strong> · Tile Storage: ~397 MB
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Card 6: Anti-Spam Guardrails */}
+                  <div className="stat-card">
+                    <div className="icon-container" style={{ background: '#f1f5f9', color: '#334155' }}>
+                      <i className="fas fa-shield-halved"></i>
+                    </div>
+                    <div className="stat-content">
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <h3>Anti-Spam &amp; Guardrails</h3>
+                        <span className="status-badge status-allocated">{systemHealth.antiSpam.status}</span>
+                      </div>
+                      <div className="value" style={{ fontSize: '22px' }}>
+                        {antiSpamConfig.blockedNumbers?.length || 0} Blocked / {antiSpamConfig.spamKeywords?.length || 0} Filters
+                      </div>
+                      <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)', marginTop: '4px' }}>
+                        Rate Limiting: <strong>{antiSpamConfig.rateLimitEnabled ? 'ON' : 'OFF'}</strong> ({antiSpamConfig.rateLimitWindowSeconds}s Cooldown)
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Endpoint Diagnostics Table */}
+                <div className="section" style={{ margin: 0 }}>
+                  <h3 style={{ margin: '0 0 14px 0', fontSize: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <i className="fas fa-server"></i> API Gateway Health Matrix
+                  </h3>
+                  <div className="table-container">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>API Route / Microservice</th>
+                          <th>Storage Backend</th>
+                          <th>Status</th>
+                          <th>Measured Latency</th>
+                          <th>Records / Items</th>
+                          <th>Health Diagnostics</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr>
+                          <td><strong>/api/telemetry</strong></td>
+                          <td><code>src/data/telemetry.json</code></td>
+                          <td><span className="status-badge status-allocated">HEALTHY</span></td>
+                          <td>{systemHealth.telemetry.latency} ms</td>
+                          <td>{systemHealth.telemetry.count} snapshot(s)</td>
+                          <td>ESP32 node heartbeat active</td>
+                        </tr>
+                        <tr>
+                          <td><strong>/api/surakshasetu-sms</strong></td>
+                          <td>Google Apps Script /exec Webhook</td>
+                          <td><span className="status-badge status-allocated">HEALTHY</span></td>
+                          <td>{systemHealth.sms.latency} ms</td>
+                          <td>{smsData.length} SMS alert(s)</td>
+                          <td>Upstream webhook sync active (5s poll)</td>
+                        </tr>
+                        <tr>
+                          <td><strong>/api/requests</strong></td>
+                          <td><code>src/data/requests.json</code></td>
+                          <td><span className="status-badge status-allocated">HEALTHY</span></td>
+                          <td>{systemHealth.requests.latency} ms</td>
+                          <td>{requests.length} record(s)</td>
+                          <td>Active queue read/write operational</td>
+                        </tr>
+                        <tr>
+                          <td><strong>/api/volunteers</strong></td>
+                          <td><code>src/data/volunteers.json</code></td>
+                          <td><span className="status-badge status-allocated">HEALTHY</span></td>
+                          <td>{systemHealth.volunteers.latency} ms</td>
+                          <td>{volunteers.length} volunteer(s)</td>
+                          <td>Role 1 verification pipeline intact</td>
+                        </tr>
+                        <tr>
+                          <td><strong>/api/offline-maps</strong></td>
+                          <td><code>src/data/offline-maps.json</code></td>
+                          <td><span className="status-badge status-allocated">HEALTHY</span></td>
+                          <td>{systemHealth.offlineMaps.latency} ms</td>
+                          <td>{offlineMapPackages.length} package(s)</td>
+                          <td>Bounding boxes &amp; offline tiles ready</td>
+                        </tr>
+                        <tr>
+                          <td><strong>/api/anti-spam</strong></td>
+                          <td><code>src/data/anti-spam.json</code></td>
+                          <td><span className="status-badge status-allocated">HEALTHY</span></td>
+                          <td>{systemHealth.antiSpam.latency} ms</td>
+                          <td>{systemHealth.antiSpam.count} active rule(s)</td>
+                          <td>Duplicate suppression &amp; phone filter active</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* TAB B: VOLUNTEER ONBOARDING (ADD-ONLY — NO APPROVAL AUTHORITY) */}
+            {maintenanceTab === 'onboarding' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                {/* Strict Rule Notice Alert */}
+                <div style={{ background: '#fef3c7', border: '1px solid #fde68a', borderRadius: '10px', padding: '16px 20px', color: '#92400e', display: 'flex', alignItems: 'flex-start', gap: '14px' }}>
+                  <i className="fas fa-triangle-exclamation" style={{ fontSize: '22px', marginTop: '2px', color: '#d97706' }}></i>
+                  <div>
+                    <strong style={{ fontSize: '15px', display: 'block', marginBottom: '4px' }}>Strict System Guardrail: Add-Only Onboarding Mode</strong>
+                    <span style={{ fontSize: '13px', lineHeight: '1.4' }}>
+                      System Maintenance Admins register and ingest new field volunteers into the centralized database with <code>verified: false</code> and <code>status: &quot;pending&quot;</code>.
+                      <strong> Approval and tactical dispatch authority remains exclusively with Role 1 (Govt Official / Incident Commander).</strong>
+                      No approval or verification controls exist in this workstation.
+                    </span>
+                  </div>
+                </div>
+
+                {/* Onboarding Form */}
+                <div className="section" style={{ margin: 0, padding: '24px' }}>
+                  <h2 style={{ margin: '0 0 16px 0', fontSize: '20px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <i className="fas fa-user-plus" style={{ color: '#2563eb' }}></i> Register New Field Volunteer
+                  </h2>
+                  <form onSubmit={handleMaintenanceVolunteerOnboard}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px', marginBottom: '16px' }}>
+                      <div className="form-group">
+                        <label htmlFor="maintVolNameInput">Full Name *</label>
+                        <input
+                          type="text"
+                          id="maintVolNameInput"
+                          className="form-control"
+                          placeholder="e.g., Ramesh Gowda"
+                          required
+                          value={maintVolName}
+                          onChange={(e) => setMaintVolName(e.target.value)}
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label htmlFor="maintVolPhoneInput">Phone / Contact Number *</label>
+                        <input
+                          type="tel"
+                          id="maintVolPhoneInput"
+                          className="form-control"
+                          placeholder="e.g., +91 98765 43210"
+                          required
+                          value={maintVolPhone}
+                          onChange={(e) => setMaintVolPhone(e.target.value)}
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label htmlFor="maintVolSpecialtySelect">Skill / Emergency Role *</label>
+                        <select
+                          id="maintVolSpecialtySelect"
+                          className="form-control"
+                          value={maintVolSpecialty}
+                          onChange={(e) => setMaintVolSpecialty(e.target.value)}
+                        >
+                          {VOLUNTEER_SPECIALTIES.map(s => (
+                            <option key={s.value} value={s.value}>{s.label}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="form-group">
+                        <label htmlFor="maintVolSectorInput">Deployment Sector / Location</label>
+                        <input
+                          type="text"
+                          id="maintVolSectorInput"
+                          className="form-control"
+                          placeholder="e.g., Tumkur Central / Sira / Koratagere"
+                          value={maintVolSector}
+                          onChange={(e) => setMaintVolSector(e.target.value)}
+                        />
+                      </div>
+                      <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+                        <label htmlFor="maintVolDocInput">Credential Type &amp; Registration ID (NCC / NSS / Medical Council / Transport License)</label>
+                        <input
+                          type="text"
+                          id="maintVolDocInput"
+                          className="form-control"
+                          placeholder="e.g., NCC-KAR-2023-8821 or KMC-DOC-49210 or Transport DL-06-2021"
+                          value={maintVolDocNumber}
+                          onChange={(e) => setMaintVolDocNumber(e.target.value)}
+                        />
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                      <button
+                        type="submit"
+                        className="btn btn-primary"
+                        disabled={isOnboardingSaving}
+                        style={{ padding: '10px 24px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px' }}
+                      >
+                        <i className={`fas fa-user-check ${isOnboardingSaving ? 'fa-spin' : ''}`}></i>
+                        Onboard Field Volunteer (Pending Verification)
+                      </button>
+                    </div>
+                  </form>
+                </div>
+
+                {/* Read-Only Volunteer Registry Table */}
+                <div className="section" style={{ margin: 0 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+                    <h2 style={{ margin: 0, fontSize: '18px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <i className="fas fa-list-check"></i> Registered Field Responders Directory (Read-Only)
+                    </h2>
+                    <span className="status-badge status-allocated">{volunteers.length} Responders Enrolled</span>
+                  </div>
+                  <div className="table-container">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>ID</th>
+                          <th>Volunteer Name</th>
+                          <th>Specialty / Role</th>
+                          <th>Contact Phone</th>
+                          <th>Credential / Registration ID</th>
+                          <th>Sector / Zone</th>
+                          <th>Verification Status (Role 1 Authority)</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {volunteers.map(vol => (
+                          <tr key={vol.id}>
+                            <td><strong>#{String(vol.id).slice(-4)}</strong></td>
+                            <td>
+                              <strong>{vol.name}</strong>
+                            </td>
+                            <td>{vol.specialty || vol.role}</td>
+                            <td>{vol.phone}</td>
+                            <td>
+                              <span style={{ fontFamily: 'monospace', fontSize: '11px', background: 'var(--color-surface)', padding: '2px 6px', borderRadius: '4px' }}>
+                                {vol.docNumber || 'NOT-SPECIFIED'}
+                              </span>
+                            </td>
+                            <td>{vol.sector || 'Tumkur Sector'}</td>
+                            <td>
+                              {vol.verified ? (
+                                <span className="status-badge status-allocated" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                                  <i className="fas fa-check-circle"></i> Verified by Govt
+                                </span>
+                              ) : (
+                                <span className="status-badge status-pending" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                                  <i className="fas fa-clock"></i> Pending Govt Approval
+                                </span>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* TAB C: OFFLINE MAPS MANAGEMENT & CACHE UPDATER */}
+            {maintenanceTab === 'offline-maps' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                <div className="section" style={{ margin: 0, padding: '20px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '14px' }}>
+                    <div>
+                      <h2 style={{ margin: 0, fontSize: '20px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <i className="fas fa-map-location" style={{ color: '#2563eb' }}></i>
+                        Tactical Offline Maps &amp; Tile Cache Registry
+                      </h2>
+                      <p style={{ margin: '4px 0 0', fontSize: '13px', color: 'var(--color-text-secondary)' }}>
+                        Manage bounding box tile packages cached locally for zero-connectivity field operations across Karnataka.
+                      </p>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                      <button
+                        type="button"
+                        className="btn btn-primary btn-small"
+                        onClick={() => {
+                          const target = viewingMapPackage || offlineMapPackages[0];
+                          if (target) {
+                            setViewingMapPackage(target);
+                          }
+                        }}
+                        style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 'bold' }}
+                      >
+                        <i className="fas fa-map-location-dot"></i>
+                        {viewingMapPackage ? 'Viewing Map' : 'View Map'}
+                      </button>
+                      <span className="status-badge status-allocated">
+                        <i className="fas fa-database"></i> {offlineMapPackages.length} Region Packages Synced
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Interactive Offline Map Viewport (Displayed when View Map is clicked) */}
+                {viewingMapPackage && (
+                  <div className="section" id="offlineMapViewportSection" style={{ margin: 0, padding: '20px', border: '2px solid #2563eb', borderRadius: '12px', background: '#ffffff', boxShadow: '0 4px 16px rgba(37,99,235,0.1)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', flexWrap: 'wrap', gap: '12px' }}>
+                      <div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                          <h3 style={{ margin: 0, fontSize: '19px', color: '#1e293b', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <i className="fas fa-map-location-dot" style={{ color: '#2563eb' }}></i>
+                            {viewingMapPackage.name}
+                          </h3>
+                          <span className="status-badge status-allocated">
+                            <i className="fas fa-satellite"></i> TACTICAL GIS VIEW ACTIVE
+                          </span>
+                          <span className="status-badge status-pending">
+                            v{viewingMapPackage.version}
+                          </span>
+                        </div>
+                        <div style={{ fontSize: '13px', color: 'var(--color-text-secondary)', marginTop: '4px' }}>
+                          Region: <strong>{viewingMapPackage.region}</strong> · Center Coordinates: <strong>[{viewingMapPackage.center?.join(', ')}]</strong> · Zoom Range: <strong>{viewingMapPackage.minZoom} - {viewingMapPackage.maxZoom}</strong>
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <button
+                          type="button"
+                          className="btn btn-secondary btn-small"
+                          onClick={() => setViewingMapPackage(null)}
+                          style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 'bold' }}
+                        >
+                          <i className="fas fa-times"></i> Close Map
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Map Component View */}
+                    <div style={{ height: '480px', width: '100%', border: '1px solid #cbd5e1', borderRadius: '10px', overflow: 'hidden' }}>
+                      <MapComponent
+                        lat={viewingMapPackage.center[0]}
+                        lng={viewingMapPackage.center[1]}
+                        name={viewingMapPackage.name}
+                        requests={requests}
+                        volunteers={volunteers}
+                        onMapClick={handleMapClick}
+                        selectedLocation={selectedLocation}
+                        routeCoordinates={routeCoordinates}
+                        smsAlerts={smsData}
+                      />
+                    </div>
+
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '12px', fontSize: '12.5px', color: 'var(--color-text-secondary)', flexWrap: 'wrap', gap: '10px', background: 'var(--color-surface)', padding: '10px 14px', borderRadius: '8px' }}>
+                      <div>
+                        <i className="fas fa-database" style={{ color: '#2563eb' }}></i> Cache: <strong>{viewingMapPackage.tilesCount?.toLocaleString()} Tiles ({viewingMapPackage.sizeMb} MB)</strong> · Status: <span style={{ color: '#16a34a', fontWeight: 'bold' }}>{viewingMapPackage.status?.toUpperCase() || 'SYNCED'}</span>
+                      </div>
+                      <div>
+                        <strong>Sector Bounds:</strong> North: {viewingMapPackage.bounds?.north}, South: {viewingMapPackage.bounds?.south}, East: {viewingMapPackage.bounds?.east}, West: {viewingMapPackage.bounds?.west}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Map Packages Cards */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '18px' }}>
+                  {offlineMapPackages.map(pkg => (
+                    <div
+                      key={pkg.id}
+                      className="section"
+                      style={{
+                        margin: 0,
+                        padding: '20px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'space-between',
+                        border: viewingMapPackage?.id === pkg.id ? '2px solid #2563eb' : '1px solid var(--color-border)',
+                        boxShadow: viewingMapPackage?.id === pkg.id ? '0 0 0 2px rgba(37,99,235,0.2)' : 'none'
+                      }}
+                    >
+                      <div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
+                          <h3 style={{ margin: 0, fontSize: '17px', color: '#1e293b' }}>{pkg.name}</h3>
+                          <span className="status-badge status-allocated">v{pkg.version}</span>
+                        </div>
+                        <div style={{ fontSize: '13px', color: 'var(--color-text-secondary)', marginBottom: '14px' }}>
+                          <i className="fas fa-location-dot"></i> {pkg.region}
+                        </div>
+
+                        <div style={{ background: 'var(--color-surface)', padding: '12px', borderRadius: '8px', fontSize: '12px', marginBottom: '14px', lineHeight: '1.6' }}>
+                          <div><strong>Bounding Coordinates:</strong> N:{pkg.bounds?.north}, S:{pkg.bounds?.south}, E:{pkg.bounds?.east}, W:{pkg.bounds?.west}</div>
+                          <div><strong>Center:</strong> [{pkg.center?.join(', ')}]</div>
+                          <div><strong>Zoom Range:</strong> Zoom Level {pkg.minZoom} - {pkg.maxZoom}</div>
+                          <div><strong>Estimated Tiles:</strong> {pkg.tilesCount?.toLocaleString()} tiles ({pkg.sizeMb} MB)</div>
+                          <div><strong>Last Synchronized:</strong> {pkg.lastUpdated ? new Date(pkg.lastUpdated).toLocaleString() : 'Recently'}</div>
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginTop: '12px' }}>
+                        <button
+                          type="button"
+                          className="btn btn-secondary"
+                          onClick={() => {
+                            setViewingMapPackage(pkg);
+                            const el = document.getElementById('offlineMapViewportSection');
+                            if (el) el.scrollIntoView({ behavior: 'smooth' });
+                          }}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '6px',
+                            fontWeight: 'bold',
+                            borderColor: viewingMapPackage?.id === pkg.id ? '#10b981' : '#2563eb',
+                            color: viewingMapPackage?.id === pkg.id ? '#047857' : '#1d4ed8',
+                            background: viewingMapPackage?.id === pkg.id ? '#ecfdf5' : 'transparent',
+                            padding: '10px 8px'
+                          }}
+                        >
+                          <i className="fas fa-map-location-dot"></i>
+                          {viewingMapPackage?.id === pkg.id ? 'Viewing Map' : 'View Map'}
+                        </button>
+                        <button
+                          type="button"
+                          className="btn btn-primary"
+                          onClick={() => handleSyncOfflineMap(pkg.id)}
+                          disabled={syncingMapId === pkg.id}
+                          style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', fontWeight: 'bold', padding: '10px 8px' }}
+                        >
+                          <i className={`fas fa-arrows-rotate ${syncingMapId === pkg.id ? 'fa-spin' : ''}`}></i>
+                          {syncingMapId === pkg.id ? 'Syncing...' : 'Sync Package'}
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* TAB D: ANTI-SPAM & INCOMING ALERT GUARDRAILS */}
+            {maintenanceTab === 'anti-spam' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                {/* Active Guardrails Overview Card */}
+                <div className="section" style={{ margin: 0, padding: '20px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '14px' }}>
+                    <div>
+                      <h2 style={{ margin: 0, fontSize: '20px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <i className="fas fa-shield-virus" style={{ color: '#dc2626' }}></i>
+                        Anti-Spam &amp; Ingestion Guardrails Configuration
+                      </h2>
+                      <p style={{ margin: '4px 0 0', fontSize: '13px', color: 'var(--color-text-secondary)' }}>
+                        Filter bogus senders, commercial spam keywords, and repetitive SMS floods from polluting emergency queues.
+                      </p>
+                    </div>
+                    <span className="status-badge status-allocated">
+                      <i className="fas fa-shield-check"></i> Filter Active on /api/surakshasetu-sms &amp; /api/requests
+                    </span>
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '20px' }}>
+                  {/* Blocked Sender Numbers Panel */}
+                  <div className="section" style={{ margin: 0, padding: '20px' }}>
+                    <h3 style={{ margin: '0 0 14px 0', fontSize: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <i className="fas fa-phone-slash" style={{ color: '#dc2626' }}></i>
+                      Blocked Sender Phone Numbers ({antiSpamConfig.blockedNumbers?.length || 0})
+                    </h3>
+                    <form onSubmit={handleAddBlockedNumber} style={{ display: 'flex', gap: '8px', marginBottom: '14px' }}>
+                      <input
+                        type="text"
+                        className="form-control"
+                        placeholder="e.g. +919999999999"
+                        value={newBlockedNumberInput}
+                        onChange={(e) => setNewBlockedNumberInput(e.target.value)}
+                      />
+                      <button type="submit" className="btn btn-primary btn-small" style={{ whiteSpace: 'nowrap' }}>
+                        Block Number
+                      </button>
+                    </form>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '220px', overflowY: 'auto' }}>
+                      {antiSpamConfig.blockedNumbers && antiSpamConfig.blockedNumbers.length > 0 ? (
+                        antiSpamConfig.blockedNumbers.map(num => (
+                          <div
+                            key={num}
+                            style={{
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                              alignItems: 'center',
+                              padding: '8px 12px',
+                              background: 'var(--color-surface)',
+                              borderRadius: '6px',
+                              border: '1px solid var(--color-border)',
+                              fontSize: '13px'
+                            }}
+                          >
+                            <span style={{ fontFamily: 'monospace', fontWeight: 'bold' }}>{num}</span>
+                            <button
+                              type="button"
+                              className="btn btn-secondary btn-small"
+                              onClick={() => handleRemoveBlockedNumber(num)}
+                              style={{ color: '#dc2626', borderColor: '#fca5a5', padding: '2px 8px', fontSize: '11px' }}
+                            >
+                              Remove
+                            </button>
+                          </div>
+                        ))
+                      ) : (
+                        <div style={{ fontSize: '13px', color: 'var(--color-text-secondary)', padding: '10px' }}>
+                          No blocked numbers registered.
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Spam Keywords Filter Panel */}
+                  <div className="section" style={{ margin: 0, padding: '20px' }}>
+                    <h3 style={{ margin: '0 0 14px 0', fontSize: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <i className="fas fa-filter" style={{ color: '#f59e0b' }}></i>
+                      Spam Keywords &amp; Text Patterns ({antiSpamConfig.spamKeywords?.length || 0})
+                    </h3>
+                    <form onSubmit={handleAddSpamKeyword} style={{ display: 'flex', gap: '8px', marginBottom: '14px' }}>
+                      <input
+                        type="text"
+                        className="form-control"
+                        placeholder="e.g. lottery, prize, casino"
+                        value={newSpamKeywordInput}
+                        onChange={(e) => setNewSpamKeywordInput(e.target.value)}
+                      />
+                      <button type="submit" className="btn btn-primary btn-small" style={{ whiteSpace: 'nowrap' }}>
+                        Add Keyword
+                      </button>
+                    </form>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', maxHeight: '220px', overflowY: 'auto' }}>
+                      {antiSpamConfig.spamKeywords && antiSpamConfig.spamKeywords.length > 0 ? (
+                        antiSpamConfig.spamKeywords.map(kw => (
+                          <span
+                            key={kw}
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '6px',
+                              padding: '4px 10px',
+                              borderRadius: '16px',
+                              background: '#fee2e2',
+                              color: '#991b1b',
+                              fontSize: '12px',
+                              fontWeight: '600'
+                            }}
+                          >
+                            {kw}
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveSpamKeyword(kw)}
+                              style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#991b1b', fontWeight: 'bold' }}
+                            >
+                              &times;
+                            </button>
+                          </span>
+                        ))
+                      ) : (
+                        <div style={{ fontSize: '13px', color: 'var(--color-text-secondary)', padding: '10px' }}>
+                          No keyword filters set.
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Rate-Limiting & Duplicate Suppression Settings */}
+                  <div className="section" style={{ margin: 0, padding: '20px', gridColumn: '1 / -1' }}>
+                    <h3 style={{ margin: '0 0 14px 0', fontSize: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <i className="fas fa-gauge-high" style={{ color: '#047857' }}></i>
+                      Rate-Limiting &amp; Duplicate SMS Suppression Controls
+                    </h3>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px', background: 'var(--color-surface)', padding: '16px', borderRadius: '8px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <input
+                          type="checkbox"
+                          id="rateLimitToggle"
+                          checked={antiSpamConfig.rateLimitEnabled}
+                          onChange={handleToggleRateLimit}
+                          style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+                        />
+                        <label htmlFor="rateLimitToggle" style={{ cursor: 'pointer', fontWeight: '600', fontSize: '14px', margin: 0 }}>
+                          Enable Rate-Limiting &amp; Duplicate SMS Flood Suppression
+                        </label>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <label htmlFor="cooldownInput" style={{ fontSize: '13px', margin: 0 }}>
+                          Duplicate Cooldown Window:
+                        </label>
+                        <input
+                          type="number"
+                          id="cooldownInput"
+                          className="form-control"
+                          min="5"
+                          max="300"
+                          style={{ width: '90px' }}
+                          value={antiSpamConfig.rateLimitWindowSeconds}
+                          onChange={(e) => handleRateLimitWindowChange(e.target.value)}
+                        />
+                        <span style={{ fontSize: '13px', color: 'var(--color-text-secondary)' }}>seconds</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* 4. MODALS & DIALOGS */}
       {/* Allocate Supplies Modal */}
       {showAllocateModal && allocateRequest && (
@@ -2912,9 +4819,25 @@ export default function Home() {
                   onChange={(e) => setAllocateQtyVal(e.target.value)}
                 />
               </div>
+              <div className="form-group" style={{ marginTop: '10px' }}>
+                <label htmlFor="allocateVolunteerSelect">Dispatch / Assign to Volunteer</label>
+                <select
+                  id="allocateVolunteerSelect"
+                  className="form-control"
+                  value={allocateVolunteerId}
+                  onChange={(e) => setAllocateVolunteerId(e.target.value)}
+                >
+                  <option value="">-- Select Verified Volunteer to Dispatch (Optional) --</option>
+                  {volunteers.map(v => (
+                    <option key={v.id} value={v.id}>
+                      {v.name} ({v.specialty || v.role}) {v.verified ? '✓ Verified' : ''} — {v.status.toUpperCase()}
+                    </option>
+                  ))}
+                </select>
+              </div>
               <div className="btn-group">
                 <button type="submit" className="btn btn-primary">Allocate</button>
-                <button type="button" className="btn btn-secondary" onClick={() => { setShowAllocateModal(false); setAllocateRequest(null); }}>Cancel</button>
+                <button type="button" className="btn btn-secondary" onClick={() => { setShowAllocateModal(false); setAllocateRequest(null); setAllocateVolunteerId(''); }}>Cancel</button>
               </div>
             </form>
           </div>

@@ -1,0 +1,68 @@
+[
+  {
+    "id": "pkg-tumkur-central",
+    "name": "Tumkur District Central",
+    "region": "Tumkur, Karnataka",
+    "bounds": {
+      "north": 13.55,
+      "south": 13.15,
+      "east": 77.25,
+      "west": 76.9
+    },
+    "center": [
+      13.3409,
+      77.101
+    ],
+    "minZoom": 10,
+    "maxZoom": 18,
+    "tilesCount": 14250,
+    "sizeMb": 84.5,
+    "version": "1.2.0",
+    "status": "synced",
+    "lastUpdated": "2026-11-26T04:07:45.304Z"
+  },
+  {
+    "id": "pkg-mysuru-sector",
+    "name": "Mysuru Sector & River Basin",
+    "region": "Mysuru, Karnataka",
+    "bounds": {
+      "north": 12.45,
+      "south": 12.15,
+      "east": 76.85,
+      "west": 76.45
+    },
+    "center": [
+      12.2958,
+      76.6394
+    ],
+    "minZoom": 10,
+    "maxZoom": 18,
+    "tilesCount": 11800,
+    "sizeMb": 68.2,
+    "version": "1.1.4",
+    "status": "synced",
+    "lastUpdated": "2026-11-26T04:07:43.169Z"
+  },
+  {
+    "id": "pkg-karnataka-state",
+    "name": "Karnataka State Emergency Grid",
+    "region": "Karnataka State",
+    "bounds": {
+      "north": 18.45,
+      "south": 11.55,
+      "east": 78.6,
+      "west": 74.05
+    },
+    "center": [
+      15.3173,
+      75.7139
+    ],
+    "minZoom": 6,
+    "maxZoom": 14,
+    "tilesCount": 38900,
+    "sizeMb": 245,
+    "version": "2.0.1",
+    "status": "synced",
+    "lastUpdated": "2026-11-26T04:07:42.210Z"
+  }
+]

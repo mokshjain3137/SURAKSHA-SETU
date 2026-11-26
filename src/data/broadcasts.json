@@ -1,1 +1,9 @@
-[]
+[
+  {
+    "id": "BC-14091",
+    "message": "hurry up",
+    "targetZone": "All Sectors",
+    "severity": "info",
+    "timestamp": "2026-11-26T01:50:14.091Z"
+  }
+]

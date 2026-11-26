@@ -13,7 +13,8 @@ const server = http.createServer((req, res) => {
         const config = `// Auto-generated config from environment variables
 window.ENV_CONFIG = {
     SUPABASE_URL: '${process.env.SUPABASE_URL || ''}',
-    SUPABASE_ANON_KEY: '${process.env.SUPABASE_ANON_KEY || ''}'
+    SUPABASE_ANON_KEY: '${process.env.SUPABASE_ANON_KEY || ''}',
+    WEATHER_API_KEY: '${process.env.WEATHER_API_KEY || ''}'
 };`;
         res.writeHead(200, { 'Content-Type': 'application/javascript' });
         res.end(config);

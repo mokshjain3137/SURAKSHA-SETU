@@ -1,0 +1,18 @@
+{
+  "blockedNumbers": [
+    "+919999999999",
+    "+919876500000"
+  ],
+  "spamKeywords": [
+    "lottery",
+    "prize",
+    "promo",
+    "free cash",
+    "subscribe",
+    "congratulations",
+    "click here",
+    "win money"
+  ],
+  "rateLimitEnabled": true,
+  "rateLimitWindowSeconds": 30
+}

@@ -42,13 +42,13 @@
 #define uS_TO_S_FACTOR 1000000ULL  // Conversion factor for micro seconds to seconds
 
 // ================== Credentials ==================
-const char* ssid = "Realme15pro";         
-const char* password = "Rishith2007"; 
-const char* botToken = "8683344314:AAETE34zer-DgxDcDqa56Vi_sJ8MQeCSRQc";
-const char* chatID = "7988893018";
+const char* ssid = "YOUR_WIFI_SSID";         
+const char* password = "YOUR_WIFI_PASSWORD"; 
+const char* botToken = "YOUR_TELEGRAM_BOT_TOKEN";
+const char* chatID = "YOUR_TELEGRAM_CHAT_ID";
 
-const char* supabase_url = "https://roypndzefjunimxzvcnf.supabase.co/rest/v1/sensor_logs";
-const char* supabase_key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJveXBuZHplZmp1bmlteHp2Y25mIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgyMTgwNTMsImV4cCI6MjA5Mzc5NDA1M30.bxHGO-nOBEsTBDUg8WIVHRr3Qyxy0g1DxokvVOHqK18";
+const char* supabase_url = "https://YOUR_PROJECT_ID.supabase.co/rest/v1/sensor_logs";
+const char* supabase_key = "YOUR_SUPABASE_ANON_KEY";
 
 // Local Next.js Dashboard Endpoint (Set to your laptop's Wi-Fi IP address on port 3000)
 const char* local_dashboard_url = "http://192.168.43.100:3000/api/telemetry";
