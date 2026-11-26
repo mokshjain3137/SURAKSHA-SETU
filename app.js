@@ -100,7 +100,7 @@ function initLogin() {
                 try {
                     // Sign in with email and password
                     const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-                        email: username + "@resqlink.com",
+                        email: username + "@surakshasetu.com",
                         password: password
                     });
 
@@ -241,7 +241,7 @@ function initRegister() {
         try {
             // Sign up with email and password, passing metadata for the trigger
             const { data, error } = await supabase.auth.signUp({
-                email: username + "@resqlink.com",
+                email: username + "@surakshasetu.com",
                 password: password,
                 options: {
                     data: {

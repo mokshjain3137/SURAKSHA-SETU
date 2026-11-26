@@ -72,6 +72,16 @@ export async function POST(request) {
       return Response.json({ error: 'Database write failed' }, { status: 500 });
     }
 
+    // Forward to Google Apps Script Webhook if configured
+    const webhookUrl = process.env.NEXT_PUBLIC_SURAKSHASETU_WEBHOOK_URL;
+    if (webhookUrl && addedCount > 0) {
+      fetch(webhookUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(incomingRequests)
+      }).catch(err => console.error("Webhook forward error:", err));
+    }
+
     return Response.json({ 
       success: true, 
       message: `Sync successful. Added ${addedCount} new, updated ${updatedCount} records.` 

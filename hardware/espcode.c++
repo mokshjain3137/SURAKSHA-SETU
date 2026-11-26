@@ -179,7 +179,7 @@ void handleNewMessages(int numNewMessages) {
     String text = bot.messages[i].text;
 
     if (text == "/start") {
-      String welcome = "Welcome to ResqLink Bot!\n";
+      String welcome = "Welcome to Suraksha Setu Bot!\n";
       welcome += "Use /status to get live sensor data.\n";
       welcome += "Use /help for more commands.";
       bot.sendMessage(chat_id, welcome, "");
@@ -219,7 +219,7 @@ void handleNewMessages(int numNewMessages) {
     }
 
     if (text == "/help") {
-      String help = "ResqLink Bot Commands:\n";
+      String help = "Suraksha Setu Bot Commands:\n";
       help += "/status - Get current sensor readings\n";
       help += "/start - Reset and show welcome message";
       bot.sendMessage(chat_id, help, "");
@@ -242,7 +242,7 @@ void setup() {
   delay(1000);
   
   Serial.println("\n\n====================================");
-  Serial.println("   RESQLINK HYBRID LORA MONITOR V5   ");
+  Serial.println("   SURAKSHA SETU HYBRID LORA MONITOR V5   ");
   Serial.println("====================================");
 
   print_wakeup_reason();
@@ -405,7 +405,7 @@ void loop() {
       broadcastLoRa(priorityLevel, "ALERT", status, latVal, lngVal);
 
       if (status != "Updated" && WiFi.status() == WL_CONNECTED) {
-        String msg = "🚨 ResqLink Alert: " + status + "\nLocation: Lat " + String(latVal, 5) + ", Lng " + String(lngVal, 5);
+        String msg = "🚨 Suraksha Setu Alert: " + status + "\nLocation: Lat " + String(latVal, 5) + ", Lng " + String(lngVal, 5);
         bot.sendMessage(chatID, msg, "");
       }
     }

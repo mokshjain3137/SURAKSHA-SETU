@@ -193,7 +193,7 @@ const TRANSLATIONS = {
     demo_btn: "Use Demo Admin Credentials",
     dont_have_account: "Don't have an account? Register new account",
     disaster_mgmt: "Disaster Response Management System",
-    join_resq: "Join Suraksha Setu",
+    join_suraksha_setu: "Join Suraksha Setu",
     create_account_sub: "Create your account to get started",
     account_security: "Account Security",
     confirm_password: "Confirm Password",
@@ -338,7 +338,7 @@ const TRANSLATIONS = {
     demo_btn: "ಡೆಮೊ ನಿರ್ವಾಹಕ ರುಜುವಾತುಗಳನ್ನು ಬಳಸಿ",
     dont_have_account: "ಖಾತೆ ಇಲ್ಲವೇ? ಹೊಸದನ್ನು ರಚಿಸಿ",
     disaster_mgmt: "ವಿಪತ್ತು ಪ್ರತಿಕ್ರಿಯೆ ನಿರ್ವಹಣಾ ವ್ಯವಸ್ಥೆ",
-    join_resq: "ಸುರಕ್ಷಾ ಸೇತು ಸೇರಿ",
+    join_suraksha_setu: "ಸುರಕ್ಷಾ ಸೇತು ಸೇರಿ",
     create_account_sub: "ಪ್ರಾರಂಭಿಸಲು ನಿಮ್ಮ ಖಾತೆಯನ್ನು ರಚಿಸಿ",
     account_security: "ಖಾತೆ ಭದ್ರತೆ",
     confirm_password: "ದೃಢೀಕರಿಸಿ",
@@ -483,8 +483,8 @@ export default function Home() {
   const [broadcastZone, setBroadcastZone] = useState("All Sectors");
   const [isDemoModeOpen, setIsDemoModeOpen] = useState(false);
 
-  // Collapsible UI panels
-  const [isHardwareExpanded, setIsHardwareExpanded] = useState(false);
+  // Collapsible UI panels (Hardware open by default for live telemetry monitoring)
+  const [isHardwareExpanded, setIsHardwareExpanded] = useState(true);
   const [isWeatherExpanded, setIsWeatherExpanded] = useState(false);
   const [isVolunteerFormExpanded, setIsVolunteerFormExpanded] = useState(false);
   const [isUserResourcesExpanded, setIsUserResourcesExpanded] = useState(false);
@@ -549,7 +549,7 @@ export default function Home() {
     }
 
     // Restore Settings
-    const savedLang = localStorage.getItem('resqlink_lang');
+    const savedLang = localStorage.getItem('suraksha_setu_lang');
     const savedTactical = localStorage.getItem('tacticalMode') === 'true';
     const savedMobile = localStorage.getItem('mobileViewActive') === 'true';
     setTimeout(() => {
@@ -1825,7 +1825,7 @@ export default function Home() {
             </div>
             <div className="header-right">
               <a
-                href="/resqlink_mobile_arm64.apk"
+                href="/suraksha_setu_mobile_arm64.apk"
                 download="suraksha_setu_mobile_arm64.apk"
                 className="btn btn-secondary btn-small"
                 style={{ padding: '10px 14px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', background: '#1d4ed8', color: '#ffffff', border: '1px solid #3b82f6', textDecoration: 'none', fontWeight: 'bold', borderRadius: '8px', boxShadow: '0 2px 8px rgba(37,99,235,0.25)' }}
@@ -2490,7 +2490,7 @@ export default function Home() {
             </div>
             <div className="header-right">
               <a
-                href="/resqlink_mobile_arm64.apk"
+                href="/suraksha_setu_mobile_arm64.apk"
                 download="suraksha_setu_mobile_arm64.apk"
                 className="btn btn-secondary btn-small"
                 style={{ padding: '10px 14px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', background: '#1d4ed8', color: '#ffffff', border: '1px solid #3b82f6', textDecoration: 'none', fontWeight: 'bold', borderRadius: '8px', boxShadow: '0 2px 8px rgba(37,99,235,0.25)' }}

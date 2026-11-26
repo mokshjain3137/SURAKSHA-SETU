@@ -1,7 +1,7 @@
-# 📡 ResQLink — Complete System Architecture & Workflow Document
+# 📡 Suraksha Setu — Complete System Architecture & Workflow Document
 
 > **Last Updated**: August 2026 | **Version**: 5.1 (Emergency Power Hub Removed)
-> A unified reference covering every module, technology, protocol, and data pipeline in the ResQLink disaster response platform.
+> A unified reference covering every module, technology, protocol, and data pipeline in the Suraksha Setu disaster response platform.
 
 ---
 

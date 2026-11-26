@@ -1,11 +1,11 @@
-# 📡 ResQ Link Physical Hardware & Firmware Documentation
+# 📡 Suraksha Setu Physical Hardware & Firmware Documentation
 
-This directory contains the physical blueprints, sensor specifications, wiring instructions, and core low-latency firmware required to build, flash, and deploy the ResQ Link Disaster Telemetry Station.
+This directory contains the physical blueprints, sensor specifications, wiring instructions, and core low-latency firmware required to build, flash, and deploy the Suraksha Setu Disaster Telemetry Station.
 
 ---
 
 ## 🏗️ Hardware System Overview
-The ResQ Link sensor node uses an **ESP32 microcontroller** paired with a dense multi-sensor array to capture micro-climate variations, structural integrity, hydro-geological changes, and position tracking. 
+The Suraksha Setu sensor node uses an **ESP32 microcontroller** paired with a dense multi-sensor array to capture micro-climate variations, structural integrity, hydro-geological changes, and position tracking. 
 
 ```mermaid
 graph TD
