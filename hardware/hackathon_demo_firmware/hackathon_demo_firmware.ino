@@ -59,6 +59,12 @@ bool adxl_found = false;
 #define VIRTUAL_VCC_3  23  // Pin D23 -> Outputs +3.3V (Plug ADXL345 CS into D23! - 100% Safe, non-strapping)
 #define VIRTUAL_VCC_4  5   // Pin D5  -> Outputs +3.3V (Recommended for Raindrop VCC)
 #define VIRTUAL_VCC_5  15  // Pin D15 -> Outputs +3.3V (Alternative 3.3V power pin)
+// ======================= 2B. VIRTUAL POWER PINS (YOUR EXACT WIRING) =======================
+#define VIRTUAL_VCC_DHT   13  // Pin D13 -> Outputs +3.3V (DHT22 Positive)
+#define VIRTUAL_GND_DHT   12  // Pin D12 -> Outputs 0V    (DHT22 Negative)
+#define VIRTUAL_VCC_ADXL  4   // Pin D4  -> Outputs +3.3V (ADXL345 VCC)
+#define VIRTUAL_GND_ADXL  2   // Pin D2  -> Outputs 0V    (ADXL345 GND)
+#define VIRTUAL_VCC_RAIN  5   // Pin D5  -> Outputs +3.3V (Raindrop VCC)
 
 // If you have Analog ADXL335 instead of ADXL345, set this to true:
 const bool USE_ANALOG_ADXL335 = false;
@@ -149,11 +155,20 @@ void setup() {
   digitalWrite(VIRTUAL_VCC_1, HIGH); // Pin D13 = +3.3V
   pinMode(VIRTUAL_GND_1, OUTPUT);
   digitalWrite(VIRTUAL_GND_1, LOW);  // Pin D18 = GND
+  // Setup Virtual Power Rails for Your Exact Wiring (No Breadboard Needed)
+  pinMode(VIRTUAL_VCC_DHT, OUTPUT);
+  digitalWrite(VIRTUAL_VCC_DHT, HIGH); // Pin D13 = +3.3V (DHT22 Positive)
+  pinMode(VIRTUAL_GND_DHT, OUTPUT);
+  digitalWrite(VIRTUAL_GND_DHT, LOW);  // Pin D12 = GND   (DHT22 Negative)
 
   pinMode(VIRTUAL_VCC_2, OUTPUT);
   digitalWrite(VIRTUAL_VCC_2, HIGH); // Pin D4  = +3.3V (ADXL345 VCC)
   pinMode(VIRTUAL_GND_2, OUTPUT);
   digitalWrite(VIRTUAL_GND_2, LOW);  // Pin D19 = GND   (ADXL345 GND)
+  pinMode(VIRTUAL_VCC_ADXL, OUTPUT);
+  digitalWrite(VIRTUAL_VCC_ADXL, HIGH); // Pin D4  = +3.3V (ADXL345 VCC)
+  pinMode(VIRTUAL_GND_ADXL, OUTPUT);
+  digitalWrite(VIRTUAL_GND_ADXL, LOW);  // Pin D2  = GND   (ADXL345 GND)
 
   pinMode(VIRTUAL_VCC_3, OUTPUT);
   digitalWrite(VIRTUAL_VCC_3, HIGH); // Pin D23 = +3.3V (ADXL345 CS pin)
@@ -161,6 +176,8 @@ void setup() {
   digitalWrite(VIRTUAL_VCC_4, HIGH); // Pin D5  = +3.3V (Raindrop VCC)
   pinMode(VIRTUAL_VCC_5, OUTPUT);
   digitalWrite(VIRTUAL_VCC_5, HIGH); // Pin D15 = +3.3V (Alternative VCC)
+  pinMode(VIRTUAL_VCC_RAIN, OUTPUT);
+  digitalWrite(VIRTUAL_VCC_RAIN, HIGH); // Pin D5  = +3.3V (Raindrop VCC)
   delay(100); // Allow sensor power rails to stabilize
 
   // Initialize Sensors
