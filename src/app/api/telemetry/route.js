@@ -4,22 +4,14 @@ import path from 'path';
 const dataFilePath = path.join(process.cwd(), 'src/data/telemetry.json');
 
 const DEFAULT_TELEMETRY = {
-  temperature: 24.5,
-  humidity: 62.0,
-  soil_moisture: 2100,
+  temperature: 27.5,
+  humidity: 63.0,
   water_level: 120.0,
   seismic: 0.05,
-  air_quality: 180,
   rain_level: 0,
-  baro_pressure: 1011.5,
-  altitude: 770.0,
-  wind_speed: 12.5,
-  wind_direction: 190,
-  latitude: 12.5118,
-  longitude: 76.8851,
-  lora_node: "LORA-NODE-01",
-  lora_rssi: -68,
-  status: "Online Active",
+  latitude: 12.3275,
+  longitude: 76.6133,
+  status: "Normal Operational Baseline",
   created_at: new Date().toISOString()
 };
 
@@ -49,8 +41,30 @@ function writeTelemetry(data) {
   }
 }
 
-// GET: Returns current real-time hardware telemetry
+// GET: Returns current real-time hardware telemetry (prioritizing live Supabase stream)
 export async function GET() {
+  const supabaseUrl = process.env.SUPABASE_URL;
+  const supabaseKey = process.env.SUPABASE_ANON_KEY;
+  if (supabaseUrl && supabaseKey) {
+    try {
+      const restEndpoint = `${supabaseUrl.replace(/\/$/, '')}/rest/v1/sensor_logs?select=*&order=created_at.desc&limit=1`;
+      const res = await fetch(restEndpoint, {
+        headers: {
+          'apikey': supabaseKey,
+          'Authorization': `Bearer ${supabaseKey}`
+        },
+        cache: 'no-store'
+      });
+      if (res.ok) {
+        const rows = await res.json();
+        if (rows && rows.length > 0 && rows[0]) {
+          return Response.json(rows[0]);
+        }
+      }
+    } catch (e) {
+      console.error('Failed to fetch from Supabase in /api/telemetry:', e.message);
+    }
+  }
   const telemetry = readTelemetry();
   return Response.json(telemetry);
 }

@@ -499,21 +499,15 @@ export default function Home() {
   // Weather & Sensors
   const [weatherData, setWeatherData] = useState(null);
   const [sensorData, setSensorData] = useState({
-    temperature: 24.5,
-    humidity: 62.0,
-    soil_moisture: 2100,
-    water_level: 120.0,
-    seismic: 0.05,
-    air_quality: 180,
-    rain_level: 0,
-    baro_pressure: 1011.5,
-    altitude: 770.0,
-    wind_speed: 12.5,
-    wind_direction: 190,
+    temperature: null,
+    humidity: null,
+    water_level: null,
+    seismic: null,
+    rain_level: null,
     latitude: 0,
     longitude: 0,
-    status: "Updated",
-    created_at: new Date().toISOString()
+    status: "Live Hardware Sync",
+    created_at: null
   });
 
   // Settings & Accessibility
@@ -799,81 +793,66 @@ export default function Home() {
     fetchWeather(currentBaseLocation.lat, currentBaseLocation.lng);
   }, [currentBaseLocation, lang]);
 
-  // 2. Live Hardware Data Polling (Direct /api/telemetry or Supabase REST API)
+  // 2. Live Hardware Data Polling (Direct Supabase REST API stream, with /api/telemetry fallback)
   useEffect(() => {
     let active = true;
     const fetchSensorData = async () => {
+      // 1. Fetch live telemetry directly from Supabase Cloud (where ESP32 hardware actively streams)
       try {
-        // 1. Try local hardware endpoint first (fast, direct ESP32 or demo bridge)
-        const localRes = await fetch('/api/telemetry');
+        const configResponse = await fetch('/api/config');
+        if (configResponse.ok) {
+          const config = await configResponse.json();
+          const rawUrl = config.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+          const key = config.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
+
+          if (rawUrl && key) {
+            const supabaseUrl = `${rawUrl.replace(/\/$/, '')}/rest/v1/sensor_logs?select=*&order=created_at.desc&limit=1`;
+            const response = await fetch(supabaseUrl, {
+              headers: {
+                apikey: key,
+                Authorization: `Bearer ${key}`
+              },
+              cache: 'no-store'
+            });
+            if (response.ok) {
+              const data = await response.json();
+              if (!active) return;
+              if (data && data.length > 0 && data[0]) {
+                setSensorData(prev => ({
+                  ...prev,
+                  ...data[0],
+                  status: data[0].status || "Live Hardware Sync"
+                }));
+                return;
+              }
+            }
+          }
+        }
+      } catch (err) {
+        // Fall back to /api/telemetry
+      }
+
+      // 2. Fall back to /api/telemetry endpoint
+      try {
+        const localRes = await fetch('/api/telemetry', { cache: 'no-store' });
         if (localRes.ok) {
           const telemetryData = await localRes.json();
-          if (telemetryData && telemetryData.temperature !== undefined) {
+          if (telemetryData && (telemetryData.temperature !== undefined || telemetryData.created_at)) {
             if (!active) return;
             setSensorData(prev => ({ ...prev, ...telemetryData }));
             return;
           }
         }
       } catch (e) {
-        // Fall back to Supabase
-      }
-
-      try {
-        const configResponse = await fetch('/api/config');
-        const config = await configResponse.json();
-
-        const rawUrl = config.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || "";
-        const key = config.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
-
-        if (!rawUrl || !key) {
-          return;
-        }
-
-        const supabaseUrl = `${rawUrl.replace(/\/$/, '')}/rest/v1/sensor_logs?select=*&order=created_at.desc&limit=1`;
-
-        const response = await fetch(supabaseUrl, {
-          headers: {
-            apikey: key,
-            Authorization: `Bearer ${key}`
-          }
-        });
-        const data = await response.json();
-        if (!active) return;
-        if (data && data.length > 0) {
-          setSensorData(prev => ({ ...prev, ...data[0] }));
-          return;
-        }
-      } catch (err) {
-        if (!active) return;
-        // Suppress repeating console.error and use simulated data for offline/disconnected environment
-        setSensorData(prev => {
-          const deltaTemp = (Math.random() - 0.5) * 0.4;
-          const deltaHum = (Math.random() - 0.5) * 0.8;
-          const deltaSoil = Math.round((Math.random() - 0.5) * 20);
-          const deltaWater = parseFloat(((Math.random() - 0.5) * 0.6).toFixed(2));
-          const deltaSeismic = parseFloat(((Math.random() - 0.5) * 0.02).toFixed(4));
-          const deltaAir = Math.round((Math.random() - 0.5) * 4);
-
-          return {
-            ...prev,
-            temperature: parseFloat((Math.max(10, Math.min(45, prev.temperature + deltaTemp))).toFixed(1)),
-            humidity: parseFloat((Math.max(10, Math.min(95, prev.humidity + deltaHum))).toFixed(1)),
-            soil_moisture: Math.max(500, Math.min(4000, prev.soil_moisture + deltaSoil)),
-            water_level: parseFloat((Math.max(0, Math.min(500, prev.water_level + deltaWater))).toFixed(1)),
-            seismic: parseFloat((Math.max(0.01, Math.min(2.0, prev.seismic + deltaSeismic))).toFixed(3)),
-            air_quality: Math.max(10, Math.min(300, prev.air_quality + deltaAir)),
-            created_at: new Date().toISOString(),
-            status: prev.status || "Simulated (Offline)"
-          };
-        });
+        // Suppress
       }
     };
 
     // Fetch immediately on mount
     fetchSensorData();
 
-    // Then poll every 4 seconds for responsive live hardware updates
-    const interval = setInterval(fetchSensorData, 4000);
+    // Then poll every 3 seconds for responsive live hardware updates
+    const interval = setInterval(fetchSensorData, 3000);
 
     return () => {
       active = false;
@@ -1611,143 +1590,6 @@ export default function Home() {
     } catch (err) {
       console.error("Failed to save triage:", err);
       showToast("Failed to save triage", "error");
-    }
-  };
-
-  const handleGenerateMockSOS = async () => {
-    const latOffset = (Math.random() - 0.5) * 0.03;
-    const lngOffset = (Math.random() - 0.5) * 0.03;
-    const mockLat = currentBaseLocation.lat + latOffset;
-    const mockLng = currentBaseLocation.lng + lngOffset;
-
-    const needTypes = ["Medical", "Food & Water", "Shelter", "Ambulance", "Rescue Team"];
-    const names = ["Suresh K.", "Ravi Kumar", "Anitha M.", "Prakash Gowda", "Latha S."];
-    const descriptions = [
-      "Water is rising and flooding the house ground level. Urgent evacuation needed.",
-      "Trapped under tree branch after landslide block. Leg injury reported.",
-      "Elderly patient with heart condition requires immediate transport. Roads blocked by trees.",
-      "Displaced families without food and clean drinking water. Running out of sustenance.",
-      "Trapped on first floor, water level rising rapidly. Require rescue boat rescue."
-    ];
-
-    const randomIndex = Math.floor(Math.random() * needTypes.length);
-
-    const mockSOS = {
-      requestId: "REQ-MOCK-" + Math.floor(1000 + Math.random() * 9000),
-      resourceType: needTypes[randomIndex],
-      quantityRequested: Math.floor(1 + Math.random() * 8),
-      quantityAllocated: 0,
-      quantityPending: 1,
-      lat: mockLat,
-      lng: mockLng,
-      severity: Math.floor(3 + Math.random() * 3),
-      individualsAffected: Math.floor(2 + Math.random() * 15),
-      status: "pending",
-      contactPerson: names[Math.floor(Math.random() * names.length)],
-      contactPhone: "9" + Math.floor(100000000 + Math.random() * 900000000),
-      address: "Simulated Sector " + String.fromCharCode(65 + Math.floor(Math.random() * 5)),
-      description: descriptions[randomIndex]
-    };
-
-    try {
-      const response = await fetch('/api/requests', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(mockSOS)
-      });
-      if (response.ok) {
-        const res = await fetch('/api/requests');
-        if (res.ok) {
-          const data = await res.json();
-          const mapped = data.map(req => {
-            const mlResult = calculateMLPriority(req.resourceType, req.individualsAffected, req.severity);
-            return {
-              ...req,
-              id: req.id || req.requestId,
-              priorityScore: mlResult.priorityScore,
-              mlPriorityClass: mlResult.priorityClass,
-              mlConfidence: mlResult.mlConfidence / 100
-            };
-          });
-          setRequests(mapped);
-          showToast(`Mock SOS beacon (${mockSOS.requestId}) generated on map!`, 'success');
-        }
-      }
-    } catch (err) {
-      console.error("Failed to generate mock SOS:", err);
-      showToast("Mock SOS beacon generation failed", "error");
-    }
-  };
-
-  const handleTriggerHardwareDemo = async (type) => {
-    let payload = {};
-    if (type === 'earthquake') {
-      payload = {
-        seismic: 18.2,
-        status: "🚨 CRITICAL: SEISMIC TREMOR DETECTED (MPU6050)",
-        created_at: new Date().toISOString()
-      };
-      showToast(lang === 'kn' ? '🚨 ಭೂಕಂಪನ ಪತ್ತೆಯಾಗಿದೆ! (MPU6050: 18.2 m/s²)' : '🚨 Seismic Ground Tremor Triggered! (MPU6050: 18.2 m/s²)', 'error');
-    } else if (type === 'flood') {
-      payload = {
-        water_level: 285.0,
-        rain_level: 80,
-        status: "🌊 CRITICAL: FLOOD WATER RISING (HC-SR04)",
-        created_at: new Date().toISOString()
-      };
-      showToast(lang === 'kn' ? '🌊 ಪ್ರವಾಹ ಎಚ್ಚರಿಕೆ! (HC-SR04: 285 cm)' : '🌊 Flood Surge Alarm Triggered! (HC-SR04: 285 cm)', 'error');
-    } else if (type === 'cloudburst') {
-      payload = {
-        rain_level: 95,
-        humidity: 98.0,
-        status: "🌧️ WARNING: HEAVY CLOUDBURST (Rain Grid)",
-        created_at: new Date().toISOString()
-      };
-      showToast(lang === 'kn' ? '🌧️ ಭಾರಿ ಮಳೆ ಎಚ್ಚರಿಕೆ!' : '🌧️ Severe Downpour / Cloudburst Alert!', 'warning');
-    } else if (type === 'gas') {
-      payload = {
-        air_quality: 1950,
-        temperature: 42.0,
-        status: "💨 DANGER: TOXIC SMOKE / FIRE DETECTED (MQ-2)",
-        created_at: new Date().toISOString()
-      };
-      showToast(lang === 'kn' ? '💨 ವಿಷಕಾರಿ ಹೊಗೆ / ಅನಿಲ ಸೋರಿಕೆ!' : '💨 Toxic Gas / Smoke Alarm Triggered! (MQ-2: 1950 ADC)', 'error');
-    } else if (type === 'storm') {
-      payload = {
-        baro_pressure: 982.0,
-        wind_speed: 68.5,
-        status: "🌪️ ALARM: CYCLONE / GALE STORM (BMP280)",
-        created_at: new Date().toISOString()
-      };
-      showToast(lang === 'kn' ? '🌪️ ಚಂಡಮಾರುತ ಎಚ್ಚರಿಕೆ!' : '🌪️ Cyclone / Gale Force Winds Alert! (68.5 km/h)', 'warning');
-    } else if (type === 'reset') {
-      payload = {
-        temperature: 24.5,
-        humidity: 62.0,
-        soil_moisture: 2100,
-        water_level: 120.0,
-        seismic: 0.05,
-        air_quality: 180,
-        rain_level: 0,
-        baro_pressure: 1011.5,
-        altitude: 770.0,
-        wind_speed: 12.5,
-        wind_direction: 190,
-        status: "Normal Operational Baseline",
-        created_at: new Date().toISOString()
-      };
-      showToast(lang === 'kn' ? 'ಹಾರ್ಡ್‌ವೇರ್ ಸಂವೇದಕಗಳು ಸಾಮಾನ್ಯ ಸ್ಥಿತಿಗೆ ಮರಳಿವೆ' : 'Sensors Reset to Normal Baseline', 'success');
-    }
-
-    try {
-      await fetch('/api/telemetry', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      setSensorData(prev => ({ ...prev, ...payload }));
-    } catch (err) {
-      console.error('Error posting demo telemetry:', err);
     }
   };
 
@@ -2895,7 +2737,7 @@ export default function Home() {
                       </div>
                       <div style={{ fontSize: '11px', color: '#64748b' }}>
                         <i className="fas fa-clock" style={{ marginRight: '4px' }}></i>
-                        {t.last_sync || 'Last Sync'}: <strong>{new Date(sensorData.created_at).toLocaleTimeString()}</strong>
+                        {t.last_sync || 'Last Sync'}: <strong>{sensorData.created_at ? new Date(sensorData.created_at).toLocaleTimeString() : 'Connecting...'}</strong>
                       </div>
                     </div>
                   </div>
@@ -2913,7 +2755,7 @@ export default function Home() {
                           {t.temp} <span style={{ opacity: 0.65, fontWeight: '500' }}>· DHT22</span>
                         </div>
                         <div style={{ fontSize: '24px', fontWeight: '800', color: '#1e293b', lineHeight: 1.2 }}>
-                          {Number(sensorData.temperature || 27.5).toFixed(1)}<span style={{ fontSize: '15px', fontWeight: '600', color: '#64748b', marginLeft: '3px' }}>°C</span>
+                          {sensorData.temperature != null ? Number(sensorData.temperature).toFixed(1) : '--'}<span style={{ fontSize: '15px', fontWeight: '600', color: '#64748b', marginLeft: '3px' }}>°C</span>
                         </div>
                       </div>
                     </div>
@@ -2928,7 +2770,7 @@ export default function Home() {
                           {t.hum} <span style={{ opacity: 0.65, fontWeight: '500' }}>· DHT22</span>
                         </div>
                         <div style={{ fontSize: '24px', fontWeight: '800', color: '#1e293b', lineHeight: 1.2 }}>
-                          {Number(sensorData.humidity || 65.0).toFixed(1)}<span style={{ fontSize: '15px', fontWeight: '600', color: '#64748b', marginLeft: '3px' }}>%</span>
+                          {sensorData.humidity != null ? Number(sensorData.humidity).toFixed(1) : '--'}<span style={{ fontSize: '15px', fontWeight: '600', color: '#64748b', marginLeft: '3px' }}>%</span>
                         </div>
                       </div>
                     </div>
@@ -2943,7 +2785,7 @@ export default function Home() {
                           {t.seismic} <span style={{ opacity: 0.65, fontWeight: '500' }}>· ADXL345</span>
                         </div>
                         <div style={{ fontSize: '24px', fontWeight: '800', color: '#1e293b', lineHeight: 1.2 }}>
-                          {Number(sensorData.seismic || 0.15).toFixed(2)}<span style={{ fontSize: '13px', fontWeight: '600', color: '#64748b', marginLeft: '4px' }}>m/s²</span>
+                          {sensorData.seismic != null ? Number(sensorData.seismic).toFixed(2) : '--'}<span style={{ fontSize: '13px', fontWeight: '600', color: '#64748b', marginLeft: '4px' }}>m/s²</span>
                         </div>
                       </div>
                     </div>
@@ -2958,7 +2800,7 @@ export default function Home() {
                           {t.water} <span style={{ opacity: 0.65, fontWeight: '500' }}>· HC-SR04</span>
                         </div>
                         <div style={{ fontSize: '24px', fontWeight: '800', color: '#1e293b', lineHeight: 1.2 }}>
-                          {Number(sensorData.water_level || 120.0).toFixed(1)}<span style={{ fontSize: '14px', fontWeight: '600', color: '#64748b', marginLeft: '3px' }}>cm</span>
+                          {sensorData.water_level != null ? Number(sensorData.water_level).toFixed(1) : '--'}<span style={{ fontSize: '14px', fontWeight: '600', color: '#64748b', marginLeft: '3px' }}>cm</span>
                         </div>
                       </div>
                     </div>
@@ -2973,14 +2815,14 @@ export default function Home() {
                           {t.rain} <span style={{ opacity: 0.65, fontWeight: '500' }}>· Rain Grid</span>
                         </div>
                         <div style={{ fontSize: '24px', fontWeight: '800', color: '#1e293b', lineHeight: 1.2 }}>
-                          {Number(sensorData.rain_level || 0).toFixed(0)}<span style={{ fontSize: '14px', fontWeight: '600', color: '#64748b', marginLeft: '3px' }}>%</span>
+                          {sensorData.rain_level != null ? Number(sensorData.rain_level).toFixed(0) : '--'}<span style={{ fontSize: '14px', fontWeight: '600', color: '#64748b', marginLeft: '3px' }}>%</span>
                         </div>
                       </div>
                     </div>
 
                   </div>
                   <div style={{ padding: '0 15px 15px', fontSize: '10px', color: '#666', textAlign: 'right' }}>
-                    {t.last_sync || 'Last Sync'}: {new Date(sensorData.created_at).toLocaleTimeString()}
+                    {t.last_sync || 'Last Sync'}: {sensorData.created_at ? new Date(sensorData.created_at).toLocaleTimeString() : 'Connecting...'}
                   </div>
                 </div>
               </div>
@@ -3549,55 +3391,30 @@ export default function Home() {
                   <i className="fas fa-chevron-down" style={{ transform: isHardwareExpanded ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.3s' }}></i>
                 </div>
                 <div className={`weather-content ${isHardwareExpanded ? 'expanded' : ''}`}>
-                  <div style={{ padding: '15px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '10px' }}>
-                    <div className="hw-item" style={{ padding: '10px', background: sensorData.temperature > 38.0 ? '#fee2e2' : '#fff', color: sensorData.temperature > 38.0 ? '#991b1b' : 'inherit', border: sensorData.temperature > 38.0 ? '1px solid #ef4444' : 'none', borderRadius: '8px' }}>
-                      <label style={{ fontSize: '11px' }}>{t.temp}</label>
-                      <div style={{ fontWeight: 'bold' }}>{sensorData.temperature}°C</div>
+                  <div style={{ padding: '15px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '10px' }}>
+                    <div className="hw-item" style={{ padding: '10px', background: sensorData.temperature > 38.0 ? '#fee2e2' : '#fff', color: sensorData.temperature > 38.0 ? '#991b1b' : 'inherit', border: sensorData.temperature > 38.0 ? '1px solid #ef4444' : '1px solid #e2e8f0', borderRadius: '8px' }}>
+                      <label style={{ fontSize: '11px', color: '#64748b' }}>{t.temp} (DHT22)</label>
+                      <div style={{ fontWeight: 'bold', fontSize: '16px' }}>{sensorData.temperature != null ? `${Number(sensorData.temperature).toFixed(1)}°C` : '--'}</div>
                     </div>
-                    <div className="hw-item" style={{ padding: '10px', background: sensorData.humidity > 85.0 ? '#fee2e2' : '#fff', color: sensorData.humidity > 85.0 ? '#991b1b' : 'inherit', border: sensorData.humidity > 85.0 ? '1px solid #ef4444' : 'none', borderRadius: '8px' }}>
-                      <label style={{ fontSize: '11px' }}>{t.hum}</label>
-                      <div style={{ fontWeight: 'bold' }}>{sensorData.humidity}%</div>
+                    <div className="hw-item" style={{ padding: '10px', background: sensorData.humidity > 85.0 ? '#fee2e2' : '#fff', color: sensorData.humidity > 85.0 ? '#991b1b' : 'inherit', border: sensorData.humidity > 85.0 ? '1px solid #ef4444' : '1px solid #e2e8f0', borderRadius: '8px' }}>
+                      <label style={{ fontSize: '11px', color: '#64748b' }}>{t.hum} (DHT22)</label>
+                      <div style={{ fontWeight: 'bold', fontSize: '16px' }}>{sensorData.humidity != null ? `${Number(sensorData.humidity).toFixed(1)}%` : '--'}</div>
                     </div>
-                    <div className="hw-item" style={{ padding: '10px', background: sensorData.seismic > 0.15 ? '#fee2e2' : '#fff', color: sensorData.seismic > 0.15 ? '#991b1b' : 'inherit', border: sensorData.seismic > 0.15 ? '1px solid #ef4444' : 'none', borderRadius: '8px' }}>
-                      <label style={{ fontSize: '11px' }}>{t.seismic}</label>
-                      <div style={{ fontWeight: 'bold' }}>{sensorData.seismic} m/s²</div>
+                    <div className="hw-item" style={{ padding: '10px', background: sensorData.seismic > 0.5 ? '#fee2e2' : '#fff', color: sensorData.seismic > 0.5 ? '#991b1b' : 'inherit', border: sensorData.seismic > 0.5 ? '1px solid #ef4444' : '1px solid #e2e8f0', borderRadius: '8px' }}>
+                      <label style={{ fontSize: '11px', color: '#64748b' }}>{t.seismic} (ADXL345)</label>
+                      <div style={{ fontWeight: 'bold', fontSize: '16px' }}>{sensorData.seismic != null ? `${Number(sensorData.seismic).toFixed(2)} m/s²` : '--'}</div>
                     </div>
-                    <div className="hw-item" style={{ padding: '10px', background: sensorData.water_level > 180.0 ? '#fee2e2' : '#fff', color: sensorData.water_level > 180.0 ? '#991b1b' : 'inherit', border: sensorData.water_level > 180.0 ? '1px solid #ef4444' : 'none', borderRadius: '8px' }}>
-                      <label style={{ fontSize: '11px' }}>{t.water}</label>
-                      <div style={{ fontWeight: 'bold' }}>{sensorData.water_level} cm</div>
+                    <div className="hw-item" style={{ padding: '10px', background: sensorData.water_level < 15.0 ? '#fee2e2' : '#fff', color: sensorData.water_level < 15.0 ? '#991b1b' : 'inherit', border: sensorData.water_level < 15.0 ? '1px solid #ef4444' : '1px solid #e2e8f0', borderRadius: '8px' }}>
+                      <label style={{ fontSize: '11px', color: '#64748b' }}>{t.water} (HC-SR04)</label>
+                      <div style={{ fontWeight: 'bold', fontSize: '16px' }}>{sensorData.water_level != null ? `${Number(sensorData.water_level).toFixed(1)} cm` : '--'}</div>
                     </div>
-                    <div className="hw-item" style={{ padding: '10px', background: sensorData.soil_moisture > 3000 ? '#fee2e2' : '#fff', color: sensorData.soil_moisture > 3000 ? '#991b1b' : 'inherit', border: sensorData.soil_moisture > 3000 ? '1px solid #ef4444' : 'none', borderRadius: '8px' }}>
-                      <label style={{ fontSize: '11px' }}>{t.soil}</label>
-                      <div style={{ fontWeight: 'bold' }}>{sensorData.soil_moisture}</div>
+                    <div className="hw-item" style={{ padding: '10px', background: sensorData.rain_level > 50 ? '#fee2e2' : '#fff', color: sensorData.rain_level > 50 ? '#991b1b' : 'inherit', border: sensorData.rain_level > 50 ? '1px solid #ef4444' : '1px solid #e2e8f0', borderRadius: '8px' }}>
+                      <label style={{ fontSize: '11px', color: '#64748b' }}>{t.rain} (Rain Grid)</label>
+                      <div style={{ fontWeight: 'bold', fontSize: '16px' }}>{sensorData.rain_level != null ? `${Number(sensorData.rain_level).toFixed(0)}%` : '--'}</div>
                     </div>
-                    <div className="hw-item" style={{ padding: '10px', background: sensorData.rain_level > 50 ? '#fee2e2' : '#fff', color: sensorData.rain_level > 50 ? '#991b1b' : 'inherit', border: sensorData.rain_level > 50 ? '1px solid #ef4444' : 'none', borderRadius: '8px' }}>
-                      <label style={{ fontSize: '11px' }}>{t.rain}</label>
-                      <div style={{ fontWeight: 'bold' }}>{sensorData.rain_level}</div>
-                    </div>
-                    <div className="hw-item" style={{ padding: '10px', background: sensorData.baro_pressure < 990.0 ? '#fee2e2' : '#fff', color: sensorData.baro_pressure < 990.0 ? '#991b1b' : 'inherit', border: sensorData.baro_pressure < 990.0 ? '1px solid #ef4444' : 'none', borderRadius: '8px' }}>
-                      <label style={{ fontSize: '11px' }}>{t.pressure || 'Pressure'}</label>
-                      <div style={{ fontWeight: 'bold' }}>{sensorData.baro_pressure || 1011.5} hPa</div>
-                    </div>
-                    <div className="hw-item" style={{ padding: '10px', background: '#fff', borderRadius: '8px' }}>
-                      <label style={{ fontSize: '11px' }}>{t.altitude || 'Altitude'}</label>
-                      <div style={{ fontWeight: 'bold' }}>{sensorData.altitude || 770.0} m</div>
-                    </div>
-                    <div className="hw-item" style={{ padding: '10px', background: sensorData.air_quality > 1000 ? '#fee2e2' : '#fff', color: sensorData.air_quality > 1000 ? '#991b1b' : 'inherit', border: sensorData.air_quality > 1000 ? '1px solid #ef4444' : 'none', borderRadius: '8px' }}>
-                      <label style={{ fontSize: '11px' }}>{t.air || 'Air Quality'}</label>
-                      <div style={{ fontWeight: 'bold' }}>{sensorData.air_quality || 180}</div>
-                    </div>
-                    <div className="hw-item" style={{ padding: '10px', background: sensorData.wind_speed > 60.0 ? '#fee2e2' : '#fff', color: sensorData.wind_speed > 60.0 ? '#991b1b' : 'inherit', border: sensorData.wind_speed > 60.0 ? '1px solid #ef4444' : 'none', borderRadius: '8px' }}>
-                      <label style={{ fontSize: '11px' }}>{t.windSpeed || 'Wind Speed'}</label>
-                      <div style={{ fontWeight: 'bold' }}>{sensorData.wind_speed || 12.5} km/h</div>
-                    </div>
-                    <div className="hw-item" style={{ padding: '10px', background: '#fff', borderRadius: '8px' }}>
-                      <label style={{ fontSize: '11px' }}>{t.windDir || 'Wind Dir'}</label>
-                      <div style={{ fontWeight: 'bold' }}>{sensorData.wind_direction || 190}°</div>
-                    </div>
-                    <div className="hw-item" style={{ padding: '10px', background: '#f0fdf4', border: '1px solid #86efac', borderRadius: '8px' }}>
-                      <label style={{ fontSize: '11px', color: '#166534' }}>LoRa Node &amp; Signal</label>
-                      <div style={{ fontWeight: 'bold', fontSize: '11.5px', color: '#15803d' }}>{sensorData.lora_node || 'LORA-NODE-01'} ({sensorData.lora_rssi || -68} dBm)</div>
-                    </div>
+                  </div>
+                  <div style={{ padding: '0 15px 12px', fontSize: '10px', color: '#64748b', textAlign: 'right' }}>
+                    {t.last_sync || 'Last Sync'}: {sensorData.created_at ? new Date(sensorData.created_at).toLocaleTimeString() : 'Connecting...'}
                   </div>
                 </div>
               </div>
@@ -4190,7 +4007,7 @@ export default function Home() {
                       </div>
                       <div className="value" style={{ fontSize: '22px' }}>{systemHealth.telemetry.nodeCount} Active Node(s)</div>
                       <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)', marginTop: '4px' }}>
-                        Latency: <strong>{systemHealth.telemetry.latency} ms</strong> · Temp: {sensorData.temperature}°C · H2O: {sensorData.water_level}cm
+                        Latency: <strong>{systemHealth.telemetry.latency} ms</strong> · Temp: {sensorData.temperature != null ? `${sensorData.temperature}°C` : '--'} · H2O: {sensorData.water_level != null ? `${sensorData.water_level}cm` : '--'}
                       </div>
                     </div>
                   </div>

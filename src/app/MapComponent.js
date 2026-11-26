@@ -71,11 +71,11 @@ export default function MapComponent({ lat, lng, name, requests, volunteers, onM
     markersRef.current = [];
 
     // 3. Add Shelters (Green sphere markers with house icon)
-    const mockShelters = [
+    const designatedShelters = [
       { lat: lat + 0.003, lng: lng - 0.004, name: 'Mandya Emergency Shelter A', capacity: '120/150' },
       { lat: lat - 0.004, lng: lng + 0.005, name: 'MIMS Doctors Quarters Shelter', capacity: '85/100' }
     ];
-    mockShelters.forEach(s => {
+    designatedShelters.forEach(s => {
       const shelterIcon = L.divIcon({
         className: 'shelter-marker',
         html: `<div style="background: radial-gradient(circle at 30% 30%, #22c55e, #15803d); width: 24px; height: 24px; border-radius: 50%; border: 2px solid white; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 10px rgba(34,197,94,0.8);"><i class="fas fa-home" style="color: white; font-size: 11px;"></i></div>`,
