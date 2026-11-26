@@ -55,64 +55,95 @@ export async function POST(req) {
         : "Non-critical query. Standard logging applied.";
     }
 
-    // Try calling Groq API
-    try {
-      const languageInstruction = lang === 'kn' 
-        ? 'The output summary MUST be written in Kannada language.' 
-        : 'The output summary MUST be written in English.';
+    // Try AI Models: Gemini -> Groq -> Local Rules
+    const languageInstruction = lang === 'kn' 
+      ? 'The output summary MUST be written in Kannada language.' 
+      : 'The output summary MUST be written in English.';
 
-      const prompt = `As a Disaster Response Triage AI, classify this emergency request description.
-      Description: "${description}"
-      Determine:
-      1. mlPriorityClass: must be one of [critical, high, medium, low]
-      2. triageSummary: a clear 1-sentence action directive for dispatchers. ${languageInstruction}
-      
-      Respond ONLY in valid JSON format matching this schema:
-      {
-        "mlPriorityClass": "class_here",
-        "triageSummary": "summary_here",
-        "mlConfidence": 0.95
-      }`;
+    const prompt = `As a Disaster Response Triage AI, classify this emergency request description.
+Description: "${description}"
+Determine:
+1. mlPriorityClass: must be one of [critical, high, medium, low]
+2. triageSummary: a clear 1-sentence action directive for dispatchers. ${languageInstruction}
 
-      // Set a timeout of 4 seconds using AbortController to avoid blocking
-      const controller = new AbortController();
-      const id = setTimeout(() => controller.abort(), 4000);
+Respond ONLY in valid JSON format matching this schema:
+{
+  "mlPriorityClass": "class_here",
+  "triageSummary": "summary_here",
+  "mlConfidence": 0.95
+}`;
 
-      const groqResponse = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${process.env.GROQ_API_KEY}`
-        },
-        body: JSON.stringify({
-          model: process.env.GROQ_MODEL || 'llama-3.3-70b-versatile',
-          messages: [
-            {
-              role: 'user',
-              content: prompt
+    // 1. Check Google Gemini API
+    if (process.env.GEMINI_API_KEY) {
+      try {
+        const modelName = process.env.GEMINI_MODEL || 'gemini-1.5-flash';
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${process.env.GEMINI_API_KEY}`;
+        const geminiRes = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }],
+            generationConfig: { responseMimeType: 'application/json', temperature: 0.1 }
+          })
+        });
+        if (geminiRes.ok) {
+          const gData = await geminiRes.json();
+          const gText = gData.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (gText) {
+            const parsed = JSON.parse(gText);
+            if (parsed.mlPriorityClass && parsed.triageSummary) {
+              mlPriorityClass = parsed.mlPriorityClass.toLowerCase();
+              triageSummary = parsed.triageSummary;
+              mlConfidence = parsed.mlConfidence || 0.96;
+              return Response.json({
+                success: true,
+                provider: 'google-gemini',
+                mlPriorityClass,
+                mlConfidence: parseFloat(mlConfidence.toFixed(2)),
+                triageSummary
+              });
             }
-          ],
-          response_format: { type: 'json_object' },
-          temperature: 0.2
-        }),
-        signal: controller.signal
-      });
-      clearTimeout(id);
-
-      const data = await groqResponse.json();
-      if (data.choices && data.choices[0] && data.choices[0].message) {
-        const aiResponse = JSON.parse(data.choices[0].message.content.trim());
-        if (aiResponse.mlPriorityClass && aiResponse.triageSummary) {
-          mlPriorityClass = aiResponse.mlPriorityClass.toLowerCase();
-          triageSummary = aiResponse.triageSummary;
-          mlConfidence = aiResponse.mlConfidence || 0.92;
+          }
         }
-      } else {
-        console.error("Groq Triage Response Error Details:", data);
+      } catch (geminiErr) {
+        console.warn("Gemini Triage Error (trying fallback):", geminiErr.message);
       }
-    } catch (e) {
-      console.warn("Groq Triage Error (falling back to rules):", e);
-      // Offline or Groq offline - gracefully fallback to rule-based classification
+    }
+
+    // 2. Try calling Groq API if key present
+    if (process.env.GROQ_API_KEY) {
+      try {
+        const controller = new AbortController();
+        const id = setTimeout(() => controller.abort(), 4000);
+
+        const groqResponse = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${process.env.GROQ_API_KEY}`
+          },
+          body: JSON.stringify({
+            model: process.env.GROQ_MODEL || 'llama-3.3-70b-versatile',
+            messages: [{ role: 'user', content: prompt }],
+            response_format: { type: 'json_object' },
+            temperature: 0.2
+          }),
+          signal: controller.signal
+        });
+        clearTimeout(id);
+
+        const data = await groqResponse.json();
+        if (data.choices && data.choices[0] && data.choices[0].message) {
+          const aiResponse = JSON.parse(data.choices[0].message.content.trim());
+          if (aiResponse.mlPriorityClass && aiResponse.triageSummary) {
+            mlPriorityClass = aiResponse.mlPriorityClass.toLowerCase();
+            triageSummary = aiResponse.triageSummary;
+            mlConfidence = aiResponse.mlConfidence || 0.92;
+          }
+        }
+      } catch (e) {
+        console.warn("Groq Triage Error (falling back to rules):", e);
+      }
     }
 
     return Response.json({

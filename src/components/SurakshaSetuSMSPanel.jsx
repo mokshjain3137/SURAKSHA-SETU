@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, Fragment } from 'react';
 
 export default function SurakshaSetuSMSPanel({ onAlertsUpdate }) {
   // Offline SOS Dispatch state
@@ -12,9 +12,93 @@ export default function SurakshaSetuSMSPanel({ onAlertsUpdate }) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [lastUpdated, setLastUpdated] = useState(null);
+  const [aiDedupActive, setAiDedupActive] = useState(true);
+  const [expandedClusters, setExpandedClusters] = useState({});
 
   const hqPhone = process.env.NEXT_PUBLIC_HQ_GATEWAY_PHONE || '';
   const onAlertsUpdateRef = useRef(onAlertsUpdate);
+
+  // AI Deduplication & Clustering for SMS alerts
+  const clusteredSmsData = useCallback(() => {
+    if (!aiDedupActive) {
+      return { clusters: smsAlerts.map((row, idx) => ({ primary: row, duplicates: [], id: idx })), suppressedCount: 0, noiseReduction: 0 };
+    }
+
+    const clusters = [];
+    const visited = new Set();
+
+    const normalize = (val) => String(val || '').replace(/[^0-9]/g, '');
+    const cleanText = (t) => String(t || '').toLowerCase().replace(/[^a-z0-9]/g, ' ');
+
+    for (let i = 0; i < smsAlerts.length; i++) {
+      if (visited.has(i)) continue;
+      const primary = smsAlerts[i];
+      visited.add(i);
+
+      const pPhone = normalize(primary.FROM ?? primary.From ?? '');
+      const pMsg = cleanText(primary['RAW MESSAGE'] ?? primary['Raw Message'] ?? '');
+      const pLat = parseFloat(primary.LATITUDE ?? primary.Latitude);
+      const pLng = parseFloat(primary.LONGITUDE ?? primary.Longitude);
+
+      const duplicates = [];
+
+      for (let j = i + 1; j < smsAlerts.length; j++) {
+        if (visited.has(j)) continue;
+        const candidate = smsAlerts[j];
+        const cPhone = normalize(candidate.FROM ?? candidate.From ?? '');
+        const cMsg = cleanText(candidate['RAW MESSAGE'] ?? candidate['Raw Message'] ?? '');
+        const cLat = parseFloat(candidate.LATITUDE ?? candidate.Latitude);
+        const cLng = parseFloat(candidate.LONGITUDE ?? candidate.Longitude);
+
+        let isMatch = false;
+        let matchReason = '';
+
+        // Match 1: Same sender phone number within stream
+        if (pPhone && cPhone && (pPhone === cPhone || pPhone.endsWith(cPhone) || cPhone.endsWith(pPhone))) {
+          isMatch = true;
+          matchReason = `Repeated SMS from sender ${pPhone}`;
+        }
+
+        // Match 2: Near coordinates (within ~1km) and overlapping text
+        if (!isMatch && !isNaN(pLat) && !isNaN(cLat) && Math.abs(pLat - cLat) < 0.015 && Math.abs(pLng - cLng) < 0.015) {
+          isMatch = true;
+          matchReason = 'Identical GPS Disaster Sector';
+        }
+
+        // Match 3: High textual similarity
+        if (!isMatch && pMsg.length > 5 && cMsg.length > 5) {
+          const wordsA = new Set(pMsg.split(' ').filter(w => w.length > 3));
+          const wordsB = new Set(cMsg.split(' ').filter(w => w.length > 3));
+          let common = 0;
+          for (const w of wordsA) if (wordsB.has(w)) common++;
+          if (common >= 2 || (wordsA.size > 0 && common / wordsA.size > 0.5)) {
+            isMatch = true;
+            matchReason = 'High Semantic Overlap';
+          }
+        }
+
+        if (isMatch) {
+          visited.add(j);
+          duplicates.push({ row: candidate, reason: matchReason });
+        }
+      }
+
+      clusters.push({
+        id: i,
+        primary,
+        duplicates,
+        totalCalls: duplicates.length + 1
+      });
+    }
+
+    const total = smsAlerts.length;
+    const suppressed = total - clusters.length;
+    const rate = total > 0 ? Math.round((suppressed / total) * 100) : 0;
+
+    return { clusters, suppressedCount: suppressed, noiseReduction: rate };
+  }, [smsAlerts, aiDedupActive]);
+
+  const { clusters: displayClusters, suppressedCount, noiseReduction } = clusteredSmsData();
 
   useEffect(() => {
     onAlertsUpdateRef.current = onAlertsUpdate;
@@ -275,18 +359,81 @@ export default function SurakshaSetuSMSPanel({ onAlertsUpdate }) {
         )}
       </div>
 
-      {/* Live SMS Feed Table */}
+      {/* Live SMS Feed Table & AI Deduplication Banner */}
       <div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-          <strong style={{ fontSize: '13px', color: '#334155' }}>
-            Incoming Off-Grid Alerts ({smsAlerts.length})
-          </strong>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px', flexWrap: 'wrap', gap: '8px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <strong style={{ fontSize: '13px', color: '#334155' }}>
+              Incoming Off-Grid Alerts ({smsAlerts.length})
+            </strong>
+            <button
+              type="button"
+              onClick={() => setAiDedupActive(prev => !prev)}
+              style={{
+                fontSize: '11px',
+                padding: '3px 9px',
+                borderRadius: '14px',
+                border: '1px solid',
+                cursor: 'pointer',
+                fontWeight: 700,
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '5px',
+                background: aiDedupActive ? '#eff6ff' : '#f8fafc',
+                color: aiDedupActive ? '#2563eb' : '#64748b',
+                borderColor: aiDedupActive ? '#93c5fd' : '#cbd5e1'
+              }}
+              title="Toggle AI Deduplication & Call Clustering"
+            >
+              <i className={`fas ${aiDedupActive ? 'fa-wand-magic-sparkles' : 'fa-list'}`}></i>
+              {aiDedupActive ? 'AI Deduplication Active' : 'Raw Feed (No Dedup)'}
+            </button>
+          </div>
           {lastUpdated && (
             <span style={{ fontSize: '11px', color: '#64748b' }}>
               Synced: {lastUpdated.toLocaleTimeString()}
             </span>
           )}
         </div>
+
+        {/* AI Noise Reduction Banner when active */}
+        {aiDedupActive && smsAlerts.length > 0 && (
+          <div
+            style={{
+              padding: '8px 12px',
+              marginBottom: '10px',
+              background: '#f0fdf4',
+              color: '#166534',
+              border: '1px solid #bbf7d0',
+              borderRadius: '6px',
+              fontSize: '12px',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              flexWrap: 'wrap',
+              gap: '6px'
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <i className="fas fa-shield-halved" style={{ color: '#16a34a' }}></i>
+              <span>
+                <strong>AI Incident Deduplication:</strong> {displayClusters.length} distinct incidents identified from {smsAlerts.length} raw alerts.
+              </span>
+            </div>
+            <span
+              style={{
+                background: '#dcfce7',
+                padding: '2px 8px',
+                borderRadius: '4px',
+                fontWeight: 700,
+                fontSize: '11px',
+                color: '#15803d'
+              }}
+            >
+              {suppressedCount} duplicate calls suppressed ({noiseReduction}% noise cut)
+            </span>
+          </div>
+        )}
 
         {error && (
           <div
@@ -310,15 +457,20 @@ export default function SurakshaSetuSMSPanel({ onAlertsUpdate }) {
             <thead>
               <tr>
                 <th style={{ width: '130px' }}>Timestamp</th>
-                <th style={{ width: '120px' }}>From</th>
-                <th style={{ width: '120px' }}>Latitude</th>
-                <th style={{ width: '120px' }}>Longitude</th>
-                <th>Raw Message</th>
+                <th style={{ width: '130px' }}>From</th>
+                <th style={{ width: '110px' }}>Latitude</th>
+                <th style={{ width: '110px' }}>Longitude</th>
+                <th>Incident & Call Cluster</th>
               </tr>
             </thead>
             <tbody>
-              {smsAlerts.length > 0 ? (
-                smsAlerts.map((row, idx) => {
+              {displayClusters.length > 0 ? (
+                displayClusters.map((cluster) => {
+                  const row = cluster.primary;
+                  const idx = cluster.id;
+                  const duplicates = cluster.duplicates || [];
+                  const isExpanded = Boolean(expandedClusters[idx]);
+
                   const timestamp = row.TIMESTAMP ?? row.Timestamp ?? '';
                   const fromVal = row.FROM ?? row.From ?? 'N/A';
                   const latVal = row.LATITUDE ?? row.Latitude;
@@ -329,7 +481,6 @@ export default function SurakshaSetuSMSPanel({ onAlertsUpdate }) {
                     typeof rawMsg === 'string' && rawMsg.includes('SurakshaSetu#SOS#')
                   );
 
-                  // Format timestamp
                   let timeFormatted = 'N/A';
                   if (timestamp) {
                     try {
@@ -340,92 +491,148 @@ export default function SurakshaSetuSMSPanel({ onAlertsUpdate }) {
                     }
                   }
 
-                  // Format coordinates
                   const latNum = parseFloat(latVal);
                   const lngNum = parseFloat(lngVal);
                   const hasValidCoords = !isNaN(latNum) && !isNaN(lngNum) && (latNum !== 0 || lngNum !== 0);
 
                   return (
-                    <tr
-                      key={idx}
-                      style={{
-                        backgroundColor: isStructured ? '#fffbeb' : undefined,
-                        borderLeft: isStructured ? '4px solid #ea580c' : undefined
-                      }}
-                    >
-                      <td style={{ fontSize: '11px', whiteSpace: 'nowrap', color: '#475569' }}>
-                        {timeFormatted}
-                      </td>
-                      <td style={{ fontWeight: 600, fontSize: '12px', whiteSpace: 'nowrap' }}>
-                        <span
-                          style={{
-                            background: '#f1f5f9',
-                            padding: '2px 6px',
-                            borderRadius: '4px',
-                            color: '#1e293b'
-                          }}
-                        >
-                          <i className="fas fa-phone-alt" style={{ fontSize: '10px', marginRight: '4px', color: '#64748b' }}></i>
-                          {String(fromVal)}
-                        </span>
-                      </td>
-                      <td style={{ fontSize: '12px', fontFamily: 'monospace' }}>
-                        {hasValidCoords ? latNum.toFixed(4) : (latVal != null && latVal !== '' ? String(latVal) : 'N/A')}
-                      </td>
-                      <td style={{ fontSize: '12px', fontFamily: 'monospace' }}>
-                        {hasValidCoords ? lngNum.toFixed(4) : (lngVal != null && lngVal !== '' ? String(lngVal) : 'N/A')}
-                      </td>
-                      <td style={{ fontSize: '12px' }}>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                            {isStructured ? (
-                              <span
-                                style={{
-                                  background: '#fef3c7',
-                                  color: '#b45309',
-                                  border: '1px solid #f59e0b',
-                                  fontWeight: 700,
-                                  fontSize: '10px',
-                                  padding: '1px 6px',
-                                  borderRadius: '4px',
-                                  display: 'inline-flex',
-                                  alignItems: 'center',
-                                  gap: '4px'
-                                }}
-                              >
-                                <i className="fas fa-satellite-dish"></i> STRUCTURED SOS
-                              </span>
-                            ) : (
-                              <span
-                                style={{
-                                  background: '#f1f5f9',
-                                  color: '#64748b',
-                                  border: '1px solid #cbd5e1',
-                                  fontWeight: 600,
-                                  fontSize: '10px',
-                                  padding: '1px 6px',
-                                  borderRadius: '4px',
-                                  display: 'inline-flex',
-                                  alignItems: 'center',
-                                  gap: '4px'
-                                }}
-                              >
-                                <i className="fas fa-envelope"></i> PLAIN SMS
-                              </span>
-                            )}
-                          </div>
+                    <Fragment key={idx}>
+                      <tr
+                        style={{
+                          backgroundColor: isStructured ? '#fffbeb' : duplicates.length > 0 ? '#f8fafc' : undefined,
+                          borderLeft: isStructured ? '4px solid #ea580c' : duplicates.length > 0 ? '4px solid #3b82f6' : undefined
+                        }}
+                      >
+                        <td style={{ fontSize: '11px', whiteSpace: 'nowrap', color: '#475569' }}>
+                          {timeFormatted}
+                        </td>
+                        <td style={{ fontWeight: 600, fontSize: '12px', whiteSpace: 'nowrap' }}>
                           <span
                             style={{
-                              wordBreak: 'break-word',
-                              color: isStructured ? '#9a3412' : '#334155',
-                              fontWeight: isStructured ? 600 : 400
+                              background: '#f1f5f9',
+                              padding: '2px 6px',
+                              borderRadius: '4px',
+                              color: '#1e293b'
                             }}
                           >
-                            {rawMsg || 'Empty payload'}
+                            <i className="fas fa-phone-alt" style={{ fontSize: '10px', marginRight: '4px', color: '#64748b' }}></i>
+                            {String(fromVal)}
                           </span>
-                        </div>
-                      </td>
-                    </tr>
+                        </td>
+                        <td style={{ fontSize: '12px', fontFamily: 'monospace' }}>
+                          {hasValidCoords ? latNum.toFixed(4) : (latVal != null && latVal !== '' ? String(latVal) : 'N/A')}
+                        </td>
+                        <td style={{ fontSize: '12px', fontFamily: 'monospace' }}>
+                          {hasValidCoords ? lngNum.toFixed(4) : (lngVal != null && lngVal !== '' ? String(lngVal) : 'N/A')}
+                        </td>
+                        <td style={{ fontSize: '12px' }}>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                              {isStructured ? (
+                                <span
+                                  style={{
+                                    background: '#fef3c7',
+                                    color: '#b45309',
+                                    border: '1px solid #f59e0b',
+                                    fontWeight: 700,
+                                    fontSize: '10px',
+                                    padding: '1px 6px',
+                                    borderRadius: '4px',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '4px'
+                                  }}
+                                >
+                                  <i className="fas fa-satellite-dish"></i> STRUCTURED SOS
+                                </span>
+                              ) : (
+                                <span
+                                  style={{
+                                    background: '#f1f5f9',
+                                    color: '#64748b',
+                                    border: '1px solid #cbd5e1',
+                                    fontWeight: 600,
+                                    fontSize: '10px',
+                                    padding: '1px 6px',
+                                    borderRadius: '4px',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '4px'
+                                  }}
+                                >
+                                  <i className="fas fa-envelope"></i> PLAIN SMS
+                                </span>
+                              )}
+
+                              {duplicates.length > 0 && (
+                                <button
+                                  type="button"
+                                  onClick={() => setExpandedClusters(prev => ({ ...prev, [idx]: !prev[idx] }))}
+                                  style={{
+                                    background: '#dbeafe',
+                                    color: '#1d4ed8',
+                                    border: '1px solid #93c5fd',
+                                    fontWeight: 700,
+                                    fontSize: '10.5px',
+                                    padding: '1px 8px',
+                                    borderRadius: '4px',
+                                    cursor: 'pointer',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '4px'
+                                  }}
+                                >
+                                  <i className={`fas ${isExpanded ? 'fa-chevron-up' : 'fa-layer-group'}`}></i>
+                                  {duplicates.length + 1} Calls Merged ({duplicates.length} duplicate)
+                                </button>
+                              )}
+                            </div>
+
+                            <span
+                              style={{
+                                wordBreak: 'break-word',
+                                color: isStructured ? '#9a3412' : '#334155',
+                                fontWeight: isStructured ? 600 : 400
+                              }}
+                            >
+                              {rawMsg || 'Empty payload'}
+                            </span>
+                          </div>
+                        </td>
+                      </tr>
+
+                      {/* Expandable Child Duplicate Rows */}
+                      {isExpanded && duplicates.map((dup, dupIdx) => (
+                        <tr
+                          key={`${idx}-dup-${dupIdx}`}
+                          style={{
+                            backgroundColor: '#f1f5f9',
+                            borderLeft: '4px solid #94a3b8',
+                            fontSize: '11px'
+                          }}
+                        >
+                          <td style={{ color: '#64748b', paddingLeft: '24px' }}>
+                            <i className="fas fa-turn-up fa-rotate-90" style={{ marginRight: '6px', color: '#94a3b8' }}></i>
+                            {dup.row.TIMESTAMP || 'N/A'}
+                          </td>
+                          <td style={{ color: '#475569' }}>
+                            <span style={{ background: '#e2e8f0', padding: '1px 5px', borderRadius: '3px' }}>
+                              {dup.row.FROM || 'N/A'}
+                            </span>
+                          </td>
+                          <td style={{ fontFamily: 'monospace', color: '#64748b' }}>{dup.row.LATITUDE || '—'}</td>
+                          <td style={{ fontFamily: 'monospace', color: '#64748b' }}>{dup.row.LONGITUDE || '—'}</td>
+                          <td>
+                            <span style={{ color: '#2563eb', fontWeight: 600, marginRight: '6px' }}>
+                              [{dup.reason}]
+                            </span>
+                            <span style={{ color: '#475569' }}>
+                              {dup.row['RAW MESSAGE'] || dup.row.message || 'Duplicate content'}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </Fragment>
                   );
                 })
               ) : (

@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo, Fragment } from 'react';
 import dynamic from 'next/dynamic';
 
 const MapComponent = dynamic(() => import('./MapComponent'), { ssr: false });
@@ -523,6 +523,12 @@ export default function Home() {
   const [broadcastSeverity, setBroadcastSeverity] = useState("info");
   const [broadcastZone, setBroadcastZone] = useState("All Sectors");
   const [isDemoModeOpen, setIsDemoModeOpen] = useState(false);
+
+  // AI Alert Deduplication & Noise Reducer State
+  const [aiDedupActive, setAiDedupActive] = useState(false);
+  const [aiDedupLoading, setAiDedupLoading] = useState(false);
+  const [aiDedupResult, setAiDedupResult] = useState(null);
+  const [expandedClusterMap, setExpandedClusterMap] = useState({});
 
   // Collapsible UI panels (Hardware open by default for live telemetry monitoring)
   const [isHardwareExpanded, setIsHardwareExpanded] = useState(true);
@@ -1576,6 +1582,34 @@ export default function Home() {
     }
   };
 
+  const handleRunAIDedup = async () => {
+    setAiDedupLoading(true);
+    try {
+      const activeList = requests.filter(r => r.status !== 'resolved');
+      const response = await fetch('/api/ai-dedup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ items: activeList })
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setAiDedupResult(data);
+        setAiDedupActive(true);
+        showToast(
+          lang === 'kn'
+            ? `AI ನಕಲಿ ಕಡಿತ ಯಶಸ್ವಿಯಾಗಿದೆ: ${data.duplicateAlertsSuppressed} ನಕಲಿ ಕರೆಗಳನ್ನು ವಿಲೀನಗೊಳಿಸಲಾಗಿದೆ (${data.noiseReductionPercentage}% ಕಡಿತ).`
+            : `AI Deduplication: ${data.duplicateAlertsSuppressed} duplicate calls/alerts merged (${data.noiseReductionPercentage}% noise reduction)`,
+          'success'
+        );
+      }
+    } catch (err) {
+      console.error("AI Dedup failed:", err);
+      showToast("AI Deduplication failed", "error");
+    } finally {
+      setAiDedupLoading(false);
+    }
+  };
+
   const handleSaveAITriage = async (req) => {
     try {
       const response = await fetch('/api/requests', {
@@ -2561,57 +2595,257 @@ export default function Home() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
                 {/* Active Requests */}
                 <div className="section" id="activeRequestsSection" style={{ height: 'auto', display: 'block', margin: 0 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
-                    <h2>{t.active_req}</h2>
-                    <select id="riskSort" className="form-control" style={{ width: 'auto' }} value={riskSort} onChange={(e) => setRiskSort(e.target.value)}>
-                      <option value="critical">{t.critical_first}</option>
-                      <option value="low">{t.low_first}</option>
-                    </select>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px', flexWrap: 'wrap', gap: '10px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <h2 style={{ margin: 0 }}>{t.active_req}</h2>
+                      <button
+                        type="button"
+                        className="btn btn-secondary btn-small"
+                        onClick={handleRunAIDedup}
+                        disabled={aiDedupLoading}
+                        style={{
+                          fontSize: '11px',
+                          padding: '4px 10px',
+                          borderRadius: '6px',
+                          background: aiDedupActive ? '#eff6ff' : '#f8fafc',
+                          color: aiDedupActive ? '#2563eb' : '#475569',
+                          borderColor: aiDedupActive ? '#93c5fd' : '#cbd5e1',
+                          fontWeight: 700,
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '6px'
+                        }}
+                        title="Group multiple duplicate calls and alerts into unified incidents"
+                      >
+                        <i className={`fas ${aiDedupLoading ? 'fa-spinner fa-spin' : 'fa-wand-magic-sparkles'}`} style={{ color: '#2563eb' }}></i>
+                        {aiDedupLoading 
+                          ? (lang === 'kn' ? 'ವಿಶ್ಲೇಷಿಸಲಾಗುತ್ತಿದೆ...' : 'Analyzing Duplicates...') 
+                          : aiDedupActive 
+                          ? (lang === 'kn' ? 'AI ಕ್ಲಸ್ಟರಿಂಗ್ ಸಕ್ರಿಯವಾಗಿದೆ' : 'AI Dedup Active (Refresh)') 
+                          : (lang === 'kn' ? 'AI ನಕಲಿ ಕರೆಗಳನ್ನು ಕಡಿತಗೊಳಿಸಿ' : 'Reduce Duplicate Alerts (AI)')}
+                      </button>
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      {aiDedupActive && (
+                        <button
+                          type="button"
+                          className="btn btn-secondary btn-small"
+                          onClick={() => setAiDedupActive(false)}
+                          style={{ fontSize: '11px', padding: '3px 8px' }}
+                        >
+                          {lang === 'kn' ? 'ಸಾಮಾನ್ಯ ವೀಕ್ಷಣೆ' : 'Raw View'}
+                        </button>
+                      )}
+                      <select id="riskSort" className="form-control" style={{ width: 'auto' }} value={riskSort} onChange={(e) => setRiskSort(e.target.value)}>
+                        <option value="critical">{t.critical_first}</option>
+                        <option value="low">{t.low_first}</option>
+                      </select>
+                    </div>
                   </div>
+
+                  {/* AI Deduplication Noise Reduction Metric Banner */}
+                  {aiDedupActive && aiDedupResult && (
+                    <div
+                      style={{
+                        padding: '10px 14px',
+                        marginBottom: '15px',
+                        borderRadius: '8px',
+                        background: 'linear-gradient(135deg, #f0fdf4 0%, #eff6ff 100%)',
+                        border: '1px solid #bbf7d0',
+                        fontSize: '12px',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        flexWrap: 'wrap',
+                        gap: '8px'
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <i className="fas fa-shield-halved" style={{ color: '#16a34a', fontSize: '16px' }}></i>
+                        <span>
+                          <strong>{lang === 'kn' ? 'AI ನಕಲಿ ಕಡಿತ ಎಂಜಿನ್:' : 'AI Incident Clustering Engine:'}</strong>{' '}
+                          {aiDedupResult.duplicateAlertsSuppressed} {lang === 'kn' ? 'ನಕಲಿ ಕರೆಗಳನ್ನು ವಿಲೀನಗೊಳಿಸಲಾಗಿದೆ' : 'duplicate/redundant calls grouped into'}{' '}
+                          <strong>{aiDedupResult.clusteredIncidentsCount} {lang === 'kn' ? 'ಪ್ರಾಥಮಿಕ ಘಟನೆಗಳು' : 'master incidents'}</strong>.
+                        </span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{ background: '#dcfce7', color: '#15803d', fontWeight: 800, padding: '2px 8px', borderRadius: '4px', fontSize: '11px' }}>
+                          ⚡ {aiDedupResult.noiseReductionPercentage}% {lang === 'kn' ? 'ಶಬ್ದ ಕಡಿತ' : 'Noise Reduction'}
+                        </span>
+                        <span style={{ fontSize: '10px', color: '#64748b', fontStyle: 'italic' }}>
+                          [{aiDedupResult.providerUsed}]
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
                   <div className="table-container">
                     <table>
                       <thead>
                         <tr><th>{t.type}</th><th>{t.qty_short}</th><th>{t.location}</th><th>{t.person}</th><th>{t.phone_short}</th><th>{t.priority}</th><th>{t.status}</th><th>{t.actions}</th></tr>
                       </thead>
                       <tbody id="activeRequestsTable">
-                        {sortedRequests.active.map(req => (
-                          <tr key={req.id || req.requestId}>
-                            <td>{req.resourceType}</td>
-                            <td>{req.quantityAllocated || 0}/{req.quantityRequested}</td>
-                            <td style={{ fontSize: '13px', maxWidth: '150px' }}>{req.address || `Lat: ${req.lat.toFixed(4)}, Lng: ${req.lng.toFixed(4)}`}</td>
-                            <td>{req.contactPerson || 'N/A'}</td>
-                            <td className="contact-phone">{req.contactPhone || 'N/A'}</td>
-                            <td><span className={`priority-badge priority-${req.mlPriorityClass}`}>{req.mlPriorityClass.toUpperCase()}</span></td>
-                            <td>
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'flex-start' }}>
-                                <span className={`status-badge status-${req.status}`}>{req.status.toUpperCase()}</span>
-                                {req.dispatchStatus === 'completed' ? (
-                                  <span style={{ fontSize: '11px', fontWeight: '700', color: '#15803d', background: '#dcfce7', border: '1px solid #86efac', padding: '3px 7px', borderRadius: '4px', display: 'inline-block' }}>
-                                    ✓ Allocated by {req.completedByVolunteerName || 'Volunteer'}{req.completedBySpecialty ? ` (${req.completedBySpecialty})` : ''}
-                                  </span>
-                                ) : req.assignedVolunteerName ? (
-                                  <span style={{ fontSize: '10.5px', fontWeight: '700', color: '#b45309', background: '#fef3c7', border: '1px solid #fcd34d', padding: '2px 6px', borderRadius: '4px', display: 'inline-block' }}>
-                                    ⏳ Dispatched to {req.assignedVolunteerName} · Yet to Dispatch
-                                  </span>
-                                ) : (req.status === 'allocated' || req.status === 'partial') ? (
-                                  <span style={{ fontSize: '10.5px', fontWeight: '700', color: '#b45309', background: '#fef3c7', border: '1px solid #fcd34d', padding: '2px 6px', borderRadius: '4px', display: 'inline-block' }}>
-                                    ⏳ YET TO DISPATCH
-                                  </span>
-                                ) : null}
-                              </div>
-                            </td>
-                            <td>
-                              <div className="btn-group">
-                                <button className="btn btn-secondary btn-small" onClick={() => handleShowRoute(req)}>{t.route}</button>
-                                <button className="btn btn-secondary btn-small" onClick={() => { setSelectedTriageRequest(req); showToast(`Selected ${req.requestId} for AI Triage`, 'info'); }} style={{ background: selectedTriageRequest?.id === req.id ? '#ccd6c8' : '' }}>
-                                  <i className="fas fa-brain"></i> {lang === 'kn' ? 'ವಿಂಗಡಿಸು' : 'Triage'}
-                                </button>
-                                {req.status !== 'allocated' && <button className="btn btn-primary btn-small" onClick={() => handleAllocateOpen(req)}>{t.allocate}</button>}
-                                {req.status === 'allocated' && <button className="btn btn-primary btn-small" onClick={() => handleMarkResolved(req.id)}>{t.resolve}</button>}
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
+                        {aiDedupActive && aiDedupResult?.clusters ? (
+                          aiDedupResult.clusters.map((cluster, cIdx) => {
+                            const req = cluster.primaryIncident || {};
+                            const hasDups = cluster.duplicateCount > 0;
+                            const isClusterExpanded = Boolean(expandedClusterMap[cluster.clusterId || cIdx]);
+
+                            return (
+                              <Fragment key={cluster.clusterId || cIdx}>
+                                <tr
+                                  style={{
+                                    backgroundColor: hasDups ? '#f8fafc' : undefined,
+                                    borderLeft: hasDups ? '4px solid #2563eb' : undefined
+                                  }}
+                                >
+                                  <td>
+                                    <div>{req.resourceType}</div>
+                                    {hasDups && (
+                                      <button
+                                        type="button"
+                                        onClick={() => setExpandedClusterMap(prev => ({ ...prev, [cluster.clusterId || cIdx]: !prev[cluster.clusterId || cIdx] }))}
+                                        style={{
+                                          marginTop: '4px',
+                                          background: '#dbeafe',
+                                          color: '#1d4ed8',
+                                          border: '1px solid #93c5fd',
+                                          borderRadius: '4px',
+                                          fontSize: '10px',
+                                          fontWeight: 700,
+                                          padding: '2px 6px',
+                                          cursor: 'pointer',
+                                          display: 'inline-flex',
+                                          alignItems: 'center',
+                                          gap: '4px'
+                                        }}
+                                      >
+                                        <i className={`fas ${isClusterExpanded ? 'fa-chevron-up' : 'fa-layer-group'}`}></i>
+                                        {cluster.totalReports} Calls ({cluster.duplicateCount} Dups)
+                                      </button>
+                                    )}
+                                  </td>
+                                  <td>{req.quantityAllocated || 0}/{req.quantityRequested}</td>
+                                  <td style={{ fontSize: '13px', maxWidth: '150px' }}>
+                                    {req.address || (req.lat ? `Lat: ${Number(req.lat).toFixed(4)}, Lng: ${Number(req.lng).toFixed(4)}` : 'N/A')}
+                                    {cluster.aiSummary && hasDups && (
+                                      <div style={{ fontSize: '11px', color: '#1e40af', marginTop: '2px', fontWeight: 600 }}>
+                                        {cluster.aiSummary}
+                                      </div>
+                                    )}
+                                  </td>
+                                  <td>{req.contactPerson || 'N/A'}</td>
+                                  <td className="contact-phone">
+                                    {req.contactPhone || 'N/A'}
+                                    {cluster.callerNumbers && cluster.callerNumbers.length > 1 && (
+                                      <span style={{ display: 'block', fontSize: '10px', color: '#64748b' }}>
+                                        +{cluster.callerNumbers.length - 1} other callers
+                                      </span>
+                                    )}
+                                  </td>
+                                  <td><span className={`priority-badge priority-${req.mlPriorityClass || cluster.severity || 'medium'}`}>{(req.mlPriorityClass || cluster.severity || 'medium').toUpperCase()}</span></td>
+                                  <td>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'flex-start' }}>
+                                      <span className={`status-badge status-${req.status || 'pending'}`}>{(req.status || 'pending').toUpperCase()}</span>
+                                      {req.dispatchStatus === 'completed' ? (
+                                        <span style={{ fontSize: '11px', fontWeight: '700', color: '#15803d', background: '#dcfce7', border: '1px solid #86efac', padding: '3px 7px', borderRadius: '4px', display: 'inline-block' }}>
+                                          ✓ Allocated by {req.completedByVolunteerName || 'Volunteer'}{req.completedBySpecialty ? ` (${req.completedBySpecialty})` : ''}
+                                        </span>
+                                      ) : req.assignedVolunteerName ? (
+                                        <span style={{ fontSize: '10.5px', fontWeight: '700', color: '#b45309', background: '#fef3c7', border: '1px solid #fcd34d', padding: '2px 6px', borderRadius: '4px', display: 'inline-block' }}>
+                                          ⏳ Dispatched to {req.assignedVolunteerName} · Yet to Dispatch
+                                        </span>
+                                      ) : (req.status === 'allocated' || req.status === 'partial') ? (
+                                        <span style={{ fontSize: '10.5px', fontWeight: '700', color: '#b45309', background: '#fef3c7', border: '1px solid #fcd34d', padding: '2px 6px', borderRadius: '4px', display: 'inline-block' }}>
+                                          ⏳ YET TO DISPATCH
+                                        </span>
+                                      ) : null}
+                                    </div>
+                                  </td>
+                                  <td>
+                                    <div className="btn-group">
+                                      <button className="btn btn-secondary btn-small" onClick={() => handleShowRoute(req)}>{t.route}</button>
+                                      <button className="btn btn-secondary btn-small" onClick={() => { setSelectedTriageRequest(req); showToast(`Selected ${req.requestId} for AI Triage`, 'info'); }} style={{ background: selectedTriageRequest?.id === req.id ? '#ccd6c8' : '' }}>
+                                        <i className="fas fa-brain"></i> {lang === 'kn' ? 'ವಿಂಗಡಿಸು' : 'Triage'}
+                                      </button>
+                                      {req.status !== 'allocated' && <button className="btn btn-primary btn-small" onClick={() => handleAllocateOpen(req)}>{t.allocate}</button>}
+                                      {req.status === 'allocated' && <button className="btn btn-primary btn-small" onClick={() => handleMarkResolved(req.id)}>{t.resolve}</button>}
+                                    </div>
+                                  </td>
+                                </tr>
+
+                                {/* Expanded Duplicate Calls Sub-Table */}
+                                {isClusterExpanded && (cluster.duplicateReports || []).map((dup, dIdx) => (
+                                  <tr
+                                    key={`${cluster.clusterId}-sub-${dIdx}`}
+                                    style={{
+                                      backgroundColor: '#f1f5f9',
+                                      borderLeft: '4px solid #94a3b8',
+                                      fontSize: '11px'
+                                    }}
+                                  >
+                                    <td style={{ paddingLeft: '20px' }}>
+                                      <i className="fas fa-turn-up fa-rotate-90" style={{ marginRight: '6px', color: '#94a3b8' }}></i>
+                                      <span style={{ color: '#2563eb', fontWeight: 600 }}>Duplicate Call #{dIdx + 1}</span>
+                                    </td>
+                                    <td>{dup.quantityRequested || '1'}</td>
+                                    <td>{dup.address || 'Same Sector'}</td>
+                                    <td>{dup.contactPerson || 'Caller'}</td>
+                                    <td>{dup.contactPhone || 'N/A'}</td>
+                                    <td colSpan="3">
+                                      <span style={{ background: '#e2e8f0', color: '#475569', padding: '1px 6px', borderRadius: '3px', fontWeight: 600, marginRight: '8px' }}>
+                                        {dup.duplicateReason || 'Matched Incident'}
+                                      </span>
+                                      <span style={{ color: '#64748b' }}>
+                                        {dup.description || dup.whatNeeded || 'Identical emergency report'}
+                                      </span>
+                                    </td>
+                                  </tr>
+                                ))}
+                              </Fragment>
+                            );
+                          })
+                        ) : (
+                          sortedRequests.active.map(req => (
+                            <tr key={req.id || req.requestId}>
+                              <td>{req.resourceType}</td>
+                              <td>{req.quantityAllocated || 0}/{req.quantityRequested}</td>
+                              <td style={{ fontSize: '13px', maxWidth: '150px' }}>{req.address || (req.lat ? `Lat: ${Number(req.lat).toFixed(4)}, Lng: ${Number(req.lng).toFixed(4)}` : 'N/A')}</td>
+                              <td>{req.contactPerson || 'N/A'}</td>
+                              <td className="contact-phone">{req.contactPhone || 'N/A'}</td>
+                              <td><span className={`priority-badge priority-${req.mlPriorityClass}`}>{req.mlPriorityClass.toUpperCase()}</span></td>
+                              <td>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'flex-start' }}>
+                                  <span className={`status-badge status-${req.status}`}>{req.status.toUpperCase()}</span>
+                                  {req.dispatchStatus === 'completed' ? (
+                                    <span style={{ fontSize: '11px', fontWeight: '700', color: '#15803d', background: '#dcfce7', border: '1px solid #86efac', padding: '3px 7px', borderRadius: '4px', display: 'inline-block' }}>
+                                      ✓ Allocated by {req.completedByVolunteerName || 'Volunteer'}{req.completedBySpecialty ? ` (${req.completedBySpecialty})` : ''}
+                                    </span>
+                                  ) : req.assignedVolunteerName ? (
+                                    <span style={{ fontSize: '10.5px', fontWeight: '700', color: '#b45309', background: '#fef3c7', border: '1px solid #fcd34d', padding: '2px 6px', borderRadius: '4px', display: 'inline-block' }}>
+                                      ⏳ Dispatched to {req.assignedVolunteerName} · Yet to Dispatch
+                                    </span>
+                                  ) : (req.status === 'allocated' || req.status === 'partial') ? (
+                                    <span style={{ fontSize: '10.5px', fontWeight: '700', color: '#b45309', background: '#fef3c7', border: '1px solid #fcd34d', padding: '2px 6px', borderRadius: '4px', display: 'inline-block' }}>
+                                      ⏳ YET TO DISPATCH
+                                    </span>
+                                  ) : null}
+                                </div>
+                              </td>
+                              <td>
+                                <div className="btn-group">
+                                  <button className="btn btn-secondary btn-small" onClick={() => handleShowRoute(req)}>{t.route}</button>
+                                  <button className="btn btn-secondary btn-small" onClick={() => { setSelectedTriageRequest(req); showToast(`Selected ${req.requestId} for AI Triage`, 'info'); }} style={{ background: selectedTriageRequest?.id === req.id ? '#ccd6c8' : '' }}>
+                                    <i className="fas fa-brain"></i> {lang === 'kn' ? 'ವಿಂಗಡಿಸು' : 'Triage'}
+                                  </button>
+                                  {req.status !== 'allocated' && <button className="btn btn-primary btn-small" onClick={() => handleAllocateOpen(req)}>{t.allocate}</button>}
+                                  {req.status === 'allocated' && <button className="btn btn-primary btn-small" onClick={() => handleMarkResolved(req.id)}>{t.resolve}</button>}
+                                </div>
+                              </td>
+                            </tr>
+                          ))
+                        )}
                       </tbody>
                     </table>
                   </div>
