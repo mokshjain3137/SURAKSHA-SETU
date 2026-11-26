@@ -57,7 +57,8 @@ bool adxl_found = false;
 #define VIRTUAL_VCC_2  4   // Pin D4  -> Outputs +3.3V (Used by ADXL345 VCC)
 #define VIRTUAL_GND_2  19  // Pin D19 -> Outputs 0V    (Used by ADXL345 GND - 100% Safe, non-strapping)
 #define VIRTUAL_VCC_3  23  // Pin D23 -> Outputs +3.3V (Plug ADXL345 CS into D23! - 100% Safe, non-strapping)
-#define VIRTUAL_VCC_4  5   // Pin D5  -> Outputs +3.3V (Extra 3.3V power pin)
+#define VIRTUAL_VCC_4  5   // Pin D5  -> Outputs +3.3V (Recommended for Raindrop VCC)
+#define VIRTUAL_VCC_5  15  // Pin D15 -> Outputs +3.3V (Alternative 3.3V power pin)
 
 // If you have Analog ADXL335 instead of ADXL345, set this to true:
 const bool USE_ANALOG_ADXL335 = false;
@@ -157,7 +158,9 @@ void setup() {
   pinMode(VIRTUAL_VCC_3, OUTPUT);
   digitalWrite(VIRTUAL_VCC_3, HIGH); // Pin D23 = +3.3V (ADXL345 CS pin)
   pinMode(VIRTUAL_VCC_4, OUTPUT);
-  digitalWrite(VIRTUAL_VCC_4, HIGH); // Pin D5  = +3.3V (Extra 3.3V)
+  digitalWrite(VIRTUAL_VCC_4, HIGH); // Pin D5  = +3.3V (Raindrop VCC)
+  pinMode(VIRTUAL_VCC_5, OUTPUT);
+  digitalWrite(VIRTUAL_VCC_5, HIGH); // Pin D15 = +3.3V (Alternative VCC)
   delay(100); // Allow sensor power rails to stabilize
 
   // Initialize Sensors
