@@ -2866,48 +2866,226 @@ export default function Home() {
                   <i className="fas fa-chevron-down" style={{ transform: isHardwareExpanded ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.3s' }}></i>
                 </div>
                 <div className={`weather-content ${isHardwareExpanded ? 'expanded' : ''}`}>
-                  {/* Live Hardware Demo Simulation Control Strip */}
-                  <div style={{ padding: '10px 15px', display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center', background: 'var(--color-surface)', borderBottom: '1px solid var(--color-border)' }}>
-                    <span style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--color-primary)' }}>
-                      <i className="fas fa-vial"></i> {lang === 'kn' ? 'ಹಾರ್ಡ್‌ವೇರ್ ಸಿಮ್ಯುಲೇಶನ್ / ಟ್ರಿಗ್ಗರ್‌ಗಳು:' : 'Hardware Demo Triggers:'}
-                    </span>
-                    <button type="button" className="btn btn-secondary btn-small" onClick={() => handleTriggerHardwareDemo('earthquake')} style={{ fontSize: '11px', padding: '4px 8px', background: '#ffebee', color: '#c62828', border: '1px solid #ef9a9a' }}>
-                      🚨 MPU6050 Quake
-                    </button>
-                    <button type="button" className="btn btn-secondary btn-small" onClick={() => handleTriggerHardwareDemo('flood')} style={{ fontSize: '11px', padding: '4px 8px', background: '#e0f2fe', color: '#0369a1', border: '1px solid #7dd3fc' }}>
-                      🌊 HC-SR04 Flood
-                    </button>
-                    <button type="button" className="btn btn-secondary btn-small" onClick={() => handleTriggerHardwareDemo('cloudburst')} style={{ fontSize: '11px', padding: '4px 8px', background: '#e0f7fa', color: '#006064', border: '1px solid #80deea' }}>
-                      🌧️ Rain Storm
-                    </button>
-                    <button type="button" className="btn btn-secondary btn-small" onClick={() => handleTriggerHardwareDemo('gas')} style={{ fontSize: '11px', padding: '4px 8px', background: '#fef3c7', color: '#92400e', border: '1px solid #fcd34d' }}>
-                      💨 MQ-2 Smoke
-                    </button>
-                    <button type="button" className="btn btn-secondary btn-small" onClick={() => handleTriggerHardwareDemo('storm')} style={{ fontSize: '11px', padding: '4px 8px', background: '#f3e8ff', color: '#6b21a8', border: '1px solid #d8b4fe' }}>
-                      🌪️ BMP280 Gale
-                    </button>
-                    <button type="button" className="btn btn-secondary btn-small" onClick={() => handleTriggerHardwareDemo('reset')} style={{ fontSize: '11px', padding: '4px 8px', background: '#22c55e', color: '#fff', border: 'none' }}>
-                      🔄 Baseline Normal
-                    </button>
-                    <div style={{ marginLeft: 'auto', fontSize: '11px', color: '#555' }}>
-                      Status: <strong style={{ color: sensorData.status?.includes('CRITICAL') || sensorData.status?.includes('DANGER') || sensorData.status?.includes('WARNING') || sensorData.status?.includes('ALARM') ? '#ef4444' : '#16a34a' }}>{sensorData.status || 'Active'}</strong>
+                  {/* Clean Hardware Status Header Strip */}
+                  <div style={{ padding: '12px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'linear-gradient(to right, #f8fafc, #eff6ff)', borderBottom: '1px solid var(--color-border)', flexWrap: 'wrap', gap: '10px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <span style={{ position: 'relative', display: 'flex', height: '10px', width: '10px' }}>
+                        <span style={{ position: 'absolute', display: 'inline-flex', height: '100%', width: '100%', borderRadius: '50%', background: '#22c55e', opacity: 0.75, animation: 'ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite' }}></span>
+                        <span style={{ position: 'relative', display: 'inline-flex', borderRadius: '50%', height: '10px', width: '10px', background: '#16a34a' }}></span>
+                      </span>
+                      <span style={{ fontSize: '13px', fontWeight: '700', color: 'var(--color-primary)', letterSpacing: '0.3px' }}>
+                        {lang === 'kn' ? 'ಲೈವ್ ಹಾರ್ಡ್‌ವೇರ್ ಟೆಲಿಮೆಟ್ರಿ ಸ್ಟ್ರೀಮ್ (ESP32 Node)' : 'Live Hardware Telemetry Stream (ESP32 Node)'}
+                      </span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
+                      <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <span>Status:</span>
+                        <strong style={{
+                          color: sensorData.status?.includes('CRITICAL') || sensorData.status?.includes('DANGER') || sensorData.status?.includes('WARNING') || sensorData.status?.includes('ALARM') ? '#ef4444' : '#16a34a',
+                          background: sensorData.status?.includes('CRITICAL') || sensorData.status?.includes('DANGER') ? '#fef2f2' : '#f0fdf4',
+                          padding: '3px 10px',
+                          borderRadius: '6px',
+                          border: `1px solid ${sensorData.status?.includes('CRITICAL') || sensorData.status?.includes('DANGER') ? '#fca5a5' : '#bbf7d0'}`,
+                          fontSize: '11px',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.5px'
+                        }}>
+                          {sensorData.status || 'Normal Operational Baseline'}
+                        </strong>
+                      </div>
+                      <div style={{ fontSize: '11px', color: '#64748b' }}>
+                        <i className="fas fa-clock" style={{ marginRight: '4px' }}></i>
+                        {t.last_sync || 'Last Sync'}: <strong>{new Date(sensorData.created_at).toLocaleTimeString()}</strong>
+                      </div>
                     </div>
                   </div>
 
                   {/* 12-Sensor Telemetry Grid */}
-                  <div style={{ padding: '15px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '10px' }}>
-                    <div className={`stat-card hw-card ${sensorData.temperature > 38.0 ? 'danger-alert-card' : ''}`} id="hwCardTemp"><div className="stat-content"><h3>{t.temp} (DHT11)</h3><div className="value">{sensorData.temperature}°C</div></div></div>
-                    <div className={`stat-card hw-card ${sensorData.humidity > 85.0 ? 'danger-alert-card' : ''}`} id="hwCardHum"><div className="stat-content"><h3>{t.hum} (DHT11)</h3><div className="value">{sensorData.humidity}%</div></div></div>
-                    <div className={`stat-card hw-card ${sensorData.seismic > 0.15 ? 'danger-alert-card' : ''}`} id="hwCardSeismic"><div className="stat-content"><h3>{t.seismic} (MPU6050)</h3><div className="value">{sensorData.seismic} m/s²</div></div></div>
-                    <div className={`stat-card hw-card ${sensorData.water_level > 180.0 ? 'danger-alert-card' : ''}`} id="hwCardWater"><div className="stat-content"><h3>{t.water} (HC-SR04)</h3><div className="value">{sensorData.water_level} cm</div></div></div>
-                    <div className={`stat-card hw-card ${sensorData.soil_moisture > 3000 ? 'danger-alert-card' : ''}`} id="hwCardSoil"><div className="stat-content"><h3>{t.soil} (Probe)</h3><div className="value">{sensorData.soil_moisture}</div></div></div>
-                    <div className={`stat-card hw-card ${sensorData.rain_level > 50 ? 'danger-alert-card' : ''}`} id="hwCardRain"><div className="stat-content"><h3>{t.rain} (Grid)</h3><div className="value">{sensorData.rain_level}</div></div></div>
-                    <div className={`stat-card hw-card ${sensorData.baro_pressure < 990.0 ? 'danger-alert-card' : ''}`} id="hwCardPressure"><div className="stat-content"><h3>{t.pressure || 'Pressure'} (BMP280)</h3><div className="value">{sensorData.baro_pressure || 1011.5} hPa</div></div></div>
-                    <div className="stat-card hw-card" id="hwCardAltitude"><div className="stat-content"><h3>{t.altitude || 'Altitude'} (BMP280)</h3><div className="value">{sensorData.altitude || 770.0} m</div></div></div>
-                    <div className={`stat-card hw-card ${sensorData.air_quality > 1000 ? 'danger-alert-card' : ''}`} id="hwCardAir"><div className="stat-content"><h3>{t.air || 'Air Quality'} (MQ-2)</h3><div className="value">{sensorData.air_quality || 180}</div></div></div>
-                    <div className={`stat-card hw-card ${sensorData.wind_speed > 60.0 ? 'danger-alert-card' : ''}`} id="hwCardWindSpeed"><div className="stat-content"><h3>{t.windSpeed || 'Wind Speed'}</h3><div className="value">{sensorData.wind_speed || 12.5} km/h</div></div></div>
-                    <div className="stat-card hw-card" id="hwCardWindDir"><div className="stat-content"><h3>{t.windDir || 'Wind Dir'}</h3><div className="value">{sensorData.wind_direction || 190}°</div></div></div>
-                    <div className="stat-card hw-card" id="hwCardLora" style={{ background: '#f0fdf4', border: '1px solid #86efac' }}><div className="stat-content"><h3>LoRa &amp; GPS</h3><div className="value" style={{ fontSize: '13px', color: '#15803d' }}>{sensorData.lora_node || 'LORA-NODE-01'} ({sensorData.lora_rssi || -68} dBm)</div></div></div>
+                  <div style={{ padding: '20px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px' }}>
+                    
+                    {/* 1. Temperature (DHT22) */}
+                    <div className={`stat-card hw-card ${sensorData.temperature > 38.0 ? 'danger-alert-card' : ''}`} style={{ padding: '16px 18px', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '14px', margin: 0, height: 'auto', border: '1px solid #e2e8f0' }} id="hwCardTemp">
+                      <div style={{ width: '46px', height: '46px', borderRadius: '10px', background: '#eff6ff', color: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', flexShrink: 0 }}>
+                        <i className="fas fa-temperature-high"></i>
+                      </div>
+                      <div style={{ minWidth: 0, flex: 1 }}>
+                        <div style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '2px' }}>
+                          {t.temp} <span style={{ opacity: 0.65, fontWeight: '500' }}>· DHT22</span>
+                        </div>
+                        <div style={{ fontSize: '24px', fontWeight: '800', color: '#1e293b', lineHeight: 1.2 }}>
+                          {Number(sensorData.temperature || 27.5).toFixed(1)}<span style={{ fontSize: '15px', fontWeight: '600', color: '#64748b', marginLeft: '3px' }}>°C</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* 2. Humidity (DHT22) */}
+                    <div className={`stat-card hw-card ${sensorData.humidity > 85.0 ? 'danger-alert-card' : ''}`} style={{ padding: '16px 18px', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '14px', margin: 0, height: 'auto', border: '1px solid #e2e8f0' }} id="hwCardHum">
+                      <div style={{ width: '46px', height: '46px', borderRadius: '10px', background: '#f0fdf4', color: '#16a34a', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', flexShrink: 0 }}>
+                        <i className="fas fa-droplet"></i>
+                      </div>
+                      <div style={{ minWidth: 0, flex: 1 }}>
+                        <div style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '2px' }}>
+                          {t.hum} <span style={{ opacity: 0.65, fontWeight: '500' }}>· DHT22</span>
+                        </div>
+                        <div style={{ fontSize: '24px', fontWeight: '800', color: '#1e293b', lineHeight: 1.2 }}>
+                          {Number(sensorData.humidity || 65.0).toFixed(1)}<span style={{ fontSize: '15px', fontWeight: '600', color: '#64748b', marginLeft: '3px' }}>%</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* 3. Seismic Tremor (ADXL345) */}
+                    <div className={`stat-card hw-card ${sensorData.seismic > 1.0 ? 'danger-alert-card' : ''}`} style={{ padding: '16px 18px', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '14px', margin: 0, height: 'auto', border: '1px solid #e2e8f0' }} id="hwCardSeismic">
+                      <div style={{ width: '46px', height: '46px', borderRadius: '10px', background: '#fef2f2', color: '#dc2626', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', flexShrink: 0 }}>
+                        <i className="fas fa-wave-square"></i>
+                      </div>
+                      <div style={{ minWidth: 0, flex: 1 }}>
+                        <div style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '2px' }}>
+                          {t.seismic} <span style={{ opacity: 0.65, fontWeight: '500' }}>· ADXL345</span>
+                        </div>
+                        <div style={{ fontSize: '24px', fontWeight: '800', color: '#1e293b', lineHeight: 1.2 }}>
+                          {Number(sensorData.seismic || 0.15).toFixed(2)}<span style={{ fontSize: '13px', fontWeight: '600', color: '#64748b', marginLeft: '4px' }}>m/s²</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* 4. Water Level / Distance (HC-SR04) */}
+                    <div className={`stat-card hw-card ${sensorData.water_level < 15.0 ? 'danger-alert-card' : ''}`} style={{ padding: '16px 18px', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '14px', margin: 0, height: 'auto', border: '1px solid #e2e8f0' }} id="hwCardWater">
+                      <div style={{ width: '46px', height: '46px', borderRadius: '10px', background: '#f0f9ff', color: '#0284c7', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', flexShrink: 0 }}>
+                        <i className="fas fa-water"></i>
+                      </div>
+                      <div style={{ minWidth: 0, flex: 1 }}>
+                        <div style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '2px' }}>
+                          {t.water} <span style={{ opacity: 0.65, fontWeight: '500' }}>· HC-SR04</span>
+                        </div>
+                        <div style={{ fontSize: '24px', fontWeight: '800', color: '#1e293b', lineHeight: 1.2 }}>
+                          {Number(sensorData.water_level || 120.0).toFixed(1)}<span style={{ fontSize: '14px', fontWeight: '600', color: '#64748b', marginLeft: '3px' }}>cm</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* 5. Rain Intensity (Raindrop Module) */}
+                    <div className={`stat-card hw-card ${sensorData.rain_level > 60 ? 'danger-alert-card' : ''}`} style={{ padding: '16px 18px', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '14px', margin: 0, height: 'auto', border: '1px solid #e2e8f0' }} id="hwCardRain">
+                      <div style={{ width: '46px', height: '46px', borderRadius: '10px', background: '#ecfeff', color: '#0891b2', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', flexShrink: 0 }}>
+                        <i className="fas fa-cloud-showers-heavy"></i>
+                      </div>
+                      <div style={{ minWidth: 0, flex: 1 }}>
+                        <div style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '2px' }}>
+                          {t.rain} <span style={{ opacity: 0.65, fontWeight: '500' }}>· Rain Grid</span>
+                        </div>
+                        <div style={{ fontSize: '24px', fontWeight: '800', color: '#1e293b', lineHeight: 1.2 }}>
+                          {Number(sensorData.rain_level || 0).toFixed(0)}<span style={{ fontSize: '14px', fontWeight: '600', color: '#64748b', marginLeft: '3px' }}>%</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* 6. Soil Moisture */}
+                    <div className={`stat-card hw-card ${sensorData.soil_moisture > 3000 ? 'danger-alert-card' : ''}`} style={{ padding: '16px 18px', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '14px', margin: 0, height: 'auto', border: '1px solid #e2e8f0' }} id="hwCardSoil">
+                      <div style={{ width: '46px', height: '46px', borderRadius: '10px', background: '#fefce8', color: '#ca8a04', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', flexShrink: 0 }}>
+                        <i className="fas fa-seedling"></i>
+                      </div>
+                      <div style={{ minWidth: 0, flex: 1 }}>
+                        <div style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '2px' }}>
+                          {t.soil} <span style={{ opacity: 0.65, fontWeight: '500' }}>· Probe</span>
+                        </div>
+                        <div style={{ fontSize: '24px', fontWeight: '800', color: '#1e293b', lineHeight: 1.2 }}>
+                          {sensorData.soil_moisture || 2100}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* 7. Barometric Pressure (BMP280) */}
+                    <div className={`stat-card hw-card ${sensorData.baro_pressure < 990.0 ? 'danger-alert-card' : ''}`} style={{ padding: '16px 18px', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '14px', margin: 0, height: 'auto', border: '1px solid #e2e8f0' }} id="hwCardPressure">
+                      <div style={{ width: '46px', height: '46px', borderRadius: '10px', background: '#faf5ff', color: '#9333ea', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', flexShrink: 0 }}>
+                        <i className="fas fa-gauge-high"></i>
+                      </div>
+                      <div style={{ minWidth: 0, flex: 1 }}>
+                        <div style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '2px' }}>
+                          {t.pressure || 'Pressure'} <span style={{ opacity: 0.65, fontWeight: '500' }}>· BMP280</span>
+                        </div>
+                        <div style={{ fontSize: '24px', fontWeight: '800', color: '#1e293b', lineHeight: 1.2 }}>
+                          {Number(sensorData.baro_pressure || 1011.5).toFixed(1)}<span style={{ fontSize: '13px', fontWeight: '600', color: '#64748b', marginLeft: '3px' }}>hPa</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* 8. Altitude (BMP280) */}
+                    <div className="stat-card hw-card" style={{ padding: '16px 18px', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '14px', margin: 0, height: 'auto', border: '1px solid #e2e8f0' }} id="hwCardAltitude">
+                      <div style={{ width: '46px', height: '46px', borderRadius: '10px', background: '#f5f3ff', color: '#7c3aed', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', flexShrink: 0 }}>
+                        <i className="fas fa-mountain"></i>
+                      </div>
+                      <div style={{ minWidth: 0, flex: 1 }}>
+                        <div style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '2px' }}>
+                          {t.altitude || 'Altitude'} <span style={{ opacity: 0.65, fontWeight: '500' }}>· BMP280</span>
+                        </div>
+                        <div style={{ fontSize: '24px', fontWeight: '800', color: '#1e293b', lineHeight: 1.2 }}>
+                          {Number(sensorData.altitude || 770.0).toFixed(0)}<span style={{ fontSize: '14px', fontWeight: '600', color: '#64748b', marginLeft: '3px' }}>m</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* 9. Air Quality (MQ-2) */}
+                    <div className={`stat-card hw-card ${sensorData.air_quality > 1000 ? 'danger-alert-card' : ''}`} style={{ padding: '16px 18px', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '14px', margin: 0, height: 'auto', border: '1px solid #e2e8f0' }} id="hwCardAir">
+                      <div style={{ width: '46px', height: '46px', borderRadius: '10px', background: '#fff7ed', color: '#ea580c', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', flexShrink: 0 }}>
+                        <i className="fas fa-wind"></i>
+                      </div>
+                      <div style={{ minWidth: 0, flex: 1 }}>
+                        <div style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '2px' }}>
+                          {t.air || 'Air Quality'} <span style={{ opacity: 0.65, fontWeight: '500' }}>· MQ-2</span>
+                        </div>
+                        <div style={{ fontSize: '24px', fontWeight: '800', color: '#1e293b', lineHeight: 1.2 }}>
+                          {sensorData.air_quality || 180}<span style={{ fontSize: '12px', fontWeight: '600', color: '#64748b', marginLeft: '3px' }}>PPM</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* 10. Wind Speed */}
+                    <div className={`stat-card hw-card ${sensorData.wind_speed > 60.0 ? 'danger-alert-card' : ''}`} style={{ padding: '16px 18px', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '14px', margin: 0, height: 'auto', border: '1px solid #e2e8f0' }} id="hwCardWindSpeed">
+                      <div style={{ width: '46px', height: '46px', borderRadius: '10px', background: '#f0fdfa', color: '#0d9488', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', flexShrink: 0 }}>
+                        <i className="fas fa-fan"></i>
+                      </div>
+                      <div style={{ minWidth: 0, flex: 1 }}>
+                        <div style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '2px' }}>
+                          {t.windSpeed || 'Wind Speed'}
+                        </div>
+                        <div style={{ fontSize: '24px', fontWeight: '800', color: '#1e293b', lineHeight: 1.2 }}>
+                          {Number(sensorData.wind_speed || 12.5).toFixed(1)}<span style={{ fontSize: '13px', fontWeight: '600', color: '#64748b', marginLeft: '3px' }}>km/h</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* 11. Wind Direction */}
+                    <div className="stat-card hw-card" style={{ padding: '16px 18px', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '14px', margin: 0, height: 'auto', border: '1px solid #e2e8f0' }} id="hwCardWindDir">
+                      <div style={{ width: '46px', height: '46px', borderRadius: '10px', background: '#f8fafc', color: '#475569', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', flexShrink: 0 }}>
+                        <i className="fas fa-compass"></i>
+                      </div>
+                      <div style={{ minWidth: 0, flex: 1 }}>
+                        <div style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '2px' }}>
+                          {t.windDir || 'Wind Dir'}
+                        </div>
+                        <div style={{ fontSize: '24px', fontWeight: '800', color: '#1e293b', lineHeight: 1.2 }}>
+                          {sensorData.wind_direction || 190}°
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* 12. LoRa Gateway (ESP32) */}
+                    <div className="stat-card hw-card" style={{ padding: '16px 18px', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '14px', margin: 0, height: 'auto', background: '#f0fdf4', border: '1px solid #86efac' }} id="hwCardLora">
+                      <div style={{ width: '46px', height: '46px', borderRadius: '10px', background: '#dcfce7', color: '#15803d', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', flexShrink: 0 }}>
+                        <i className="fas fa-tower-broadcast"></i>
+                      </div>
+                      <div style={{ minWidth: 0, flex: 1 }}>
+                        <div style={{ fontSize: '11px', fontWeight: '700', color: '#15803d', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '2px' }}>
+                          LoRa &amp; Cloud Gateway
+                        </div>
+                        <div style={{ fontSize: '18px', fontWeight: '800', color: '#166534', lineHeight: 1.2 }}>
+                          {sensorData.lora_node || 'ESP32-NODE-01'}
+                        </div>
+                        <div style={{ fontSize: '11px', fontWeight: '600', color: '#15803d', marginTop: '2px' }}>
+                          RSSI: {sensorData.lora_rssi || -62} dBm
+                        </div>
+                      </div>
+                    </div>
+
                   </div>
                   <div style={{ padding: '0 15px 15px', fontSize: '10px', color: '#666', textAlign: 'right' }}>
                     {t.last_sync || 'Last Sync'}: {new Date(sensorData.created_at).toLocaleTimeString()}
