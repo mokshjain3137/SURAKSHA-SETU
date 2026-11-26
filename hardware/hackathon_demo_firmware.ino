@@ -1,17 +1,21 @@
 /*
  * ==============================================================================
- *  SURAKSHA SETU — HACKATHON LIVE HARDWARE FIRMWARE
+ *  SURAKSHA SETU — HACKATHON LIVE HARDWARE FIRMWARE (DUAL-SYNC: LOCAL + CLOUD)
  * ==============================================================================
- *  Configured specifically for your exact kit:
- *    1. ESP32 DevKit V1
- *    2. ADXL Accelerometer (Seismic / Earthquake Detection)
- *    3. DHT22 (High-Precision Temperature & Humidity)
- *    4. HC-SR04 Ultrasonic (Water Level / Flood Detection)
- *    5. Raindrop Module (Precipitation / Cloudburst)
+ *  Pinout Configuration:
+ *    1. DHT22:        Positive -> D13 (+3.3V), Negative -> D12 (GND), OUT -> D14
+ *    2. ADXL345:      VCC -> D4 (+3.3V), GND -> D2 (GND), CS -> 3V3, SDA -> D21, SCL -> D22
+ *    3. HC-SR04:      VCC -> VIN (5V), GND -> GND, Trig -> D25, Echo -> D26
+ *    4. Raindrop:     VCC -> D5 (+3.3V), GND -> GND, AO -> D33
+ *
+ *  Dual Telemetry Sync:
+ *    - Local Next.js Dashboard: http://10.252.37.150:3000/api/telemetry
+ *    - Supabase Cloud Database: https://mwwsjkrenelmpminlnya.supabase.co/rest/v1/sensor_logs
  * ==============================================================================
  */
 
 #include <WiFi.h>
+#include <WiFiClientSecure.h>
 #include <HTTPClient.h>
 #include <ArduinoJson.h>
 #include <DHT.h>
@@ -21,56 +25,40 @@
 const char* ssid     = "Realme15pro";       // Mobile Hotspot SSID
 const char* password = "Rishith2007";       // Mobile Hotspot Password
 
-// Laptop Local Server Telemetry Endpoint (Your exact Laptop Wi-Fi IP on port 3000)
+// Laptop Local Server Telemetry Endpoint
 const char* server_url = "http://10.252.37.150:3000/api/telemetry";
 
-// Cloud Backup: Supabase REST API Credentials
-const char* supabase_url = "https://roypndzefjunimxzvcnf.supabase.co/rest/v1/sensor_logs";
-const char* supabase_key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJveXBuZHplZmp1bmlteHp2Y25mIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgyMTgwNTMsImV4cCI6MjA5Mzc5NDA1M30.bxHGO-nOBEsTBDUg8WIVHRr3Qyxy0g1DxokvVOHqK18";
+// Supabase Cloud REST API Endpoint & Key
+const char* supabase_url = "https://mwwsjkrenelmpminlnya.supabase.co/rest/v1/sensor_logs";
+const char* supabase_key = "sb_publishable_5iAQUFhXBsQ45dwbTO-qCA_QET1wAkV";
 
-// Cloud Alerts: Telegram Bot Credentials
+// Telegram Incident Alerts (Optional)
 const char* telegram_bot_token = "8683344314:AAETE34zer-DgxDcDqa56Vi_sJ8MQeCSRQc";
 const char* telegram_chat_id   = "7988893018";
 
-// ======================= 2. PIN DEFINITIONS =======================
+// ======================= 2. SENSOR & POWER PIN DEFINITIONS =======================
 // DHT22 (Temperature & Humidity)
-#define DHTPIN 14          // Pin D14 (GPIO 14)
+#define DHTPIN 14          // Pin D14 (Data OUT)
 #define DHTTYPE DHT22
 DHT dht(DHTPIN, DHTTYPE);
 
 // HC-SR04 Ultrasonic (Flood / Water Distance)
-#define TRIG_PIN 25        // Pin D25 (GPIO 25)
-#define ECHO_PIN 26        // Pin D26 (GPIO 26)
+#define TRIG_PIN 25        // Pin D25
+#define ECHO_PIN 26        // Pin D26
 
 // Raindrop Sensor (Analog AO pin)
-#define RAIN_PIN 33        // Pin D33 (GPIO 33)
+#define RAIN_PIN 33        // Pin D33
 
 // ADXL345 I2C (SDA=Pin D21, SCL=Pin D22)
-// Note: CS pin MUST be connected to 3.3V / VCC to enable I2C mode!
 #define ADXL345_ADDR 0x53
 bool adxl_found = false;
 
-// ======================= 2B. VIRTUAL POWER PINS (NO BREADBOARD NEEDED) =======================
-// IMPORTANT: Avoid strapping pins (D12, D15, D2) so uploading firmware never conflicts with the internal flash chip!
-#define VIRTUAL_VCC_1  13  // Pin D13 -> Outputs +3.3V (e.g. DHT22 VCC)
-#define VIRTUAL_GND_1  18  // Pin D18 -> Outputs 0V    (e.g. DHT22 GND - 100% Safe, non-strapping)
-#define VIRTUAL_VCC_2  4   // Pin D4  -> Outputs +3.3V (Used by ADXL345 VCC)
-#define VIRTUAL_GND_2  19  // Pin D19 -> Outputs 0V    (Used by ADXL345 GND - 100% Safe, non-strapping)
-#define VIRTUAL_VCC_3  23  // Pin D23 -> Outputs +3.3V (Plug ADXL345 CS into D23! - 100% Safe, non-strapping)
-#define VIRTUAL_VCC_4  5   // Pin D5  -> Outputs +3.3V (Recommended for Raindrop VCC)
-#define VIRTUAL_VCC_5  15  // Pin D15 -> Outputs +3.3V (Alternative 3.3V power pin)
-// ======================= 2B. VIRTUAL POWER PINS (YOUR EXACT WIRING) =======================
+// Virtual Power Pins (Exact kit wiring without breadboard)
 #define VIRTUAL_VCC_DHT   13  // Pin D13 -> Outputs +3.3V (DHT22 Positive)
 #define VIRTUAL_GND_DHT   12  // Pin D12 -> Outputs 0V    (DHT22 Negative)
 #define VIRTUAL_VCC_ADXL  4   // Pin D4  -> Outputs +3.3V (ADXL345 VCC)
 #define VIRTUAL_GND_ADXL  2   // Pin D2  -> Outputs 0V    (ADXL345 GND)
 #define VIRTUAL_VCC_RAIN  5   // Pin D5  -> Outputs +3.3V (Raindrop VCC)
-
-// If you have Analog ADXL335 instead of ADXL345, set this to true:
-const bool USE_ANALOG_ADXL335 = false;
-#define ADXL_X_PIN 34
-#define ADXL_Y_PIN 35
-#define ADXL_Z_PIN 32
 
 // ======================= 3. HELPER FUNCTIONS =======================
 
@@ -84,27 +72,25 @@ void initADXL345() {
     adxl_found = true;
     Serial.println(" [✔] ADXL345 Accelerometer detected via I2C (0x53)");
   } else {
-    Serial.println(" [!] ADXL345 I2C not responding. Using analog fallback or simulation.");
+    Serial.println(" [!] ADXL345 I2C not responding. Using baseline calibration.");
   }
 }
 
 float readSeismicVector() {
-  if (USE_ANALOG_ADXL335) {
-    // Read raw ADC (0-4095) from analog pins
-    int rx = analogRead(ADXL_X_PIN) - 2048;
-    int ry = analogRead(ADXL_Y_PIN) - 2048;
-    int rz = analogRead(ADXL_Z_PIN) - 2048;
-    float mag = sqrt(rx * rx + ry * ry + rz * rz) / 100.0;
-    return mag;
-  }
-
   if (!adxl_found) {
-    // Baseline resting gravity
-    return 0.05 + ((random(-20, 20)) / 1000.0);
+    // If not detected via I2C, retry connection once
+    Wire.beginTransmission(ADXL345_ADDR);
+    Wire.write(0x2D);
+    Wire.write(8);
+    if (Wire.endTransmission() == 0) {
+      adxl_found = true;
+    } else {
+      return 0.15;
+    }
   }
 
   Wire.beginTransmission(ADXL345_ADDR);
-  Wire.write(0x32); // Register 0x32 (Data start)
+  Wire.write(0x32); // Register 0x32 (Data start: X, Y, Z)
   Wire.endTransmission(false);
   Wire.requestFrom((uint8_t)ADXL345_ADDR, (size_t)6, true);
 
@@ -123,7 +109,7 @@ float readSeismicVector() {
     float tremorDelta = abs(vectorMagnitude - 9.8);
     return tremorDelta;
   }
-  return 0.05;
+  return 0.15;
 }
 
 float readUltrasonicDistance() {
@@ -134,10 +120,9 @@ float readUltrasonicDistance() {
   digitalWrite(TRIG_PIN, LOW);
 
   long duration = pulseIn(ECHO_PIN, HIGH, 30000); // 30ms timeout
-  if (duration == 0) return 120.0; // Default baseline if not connected
+  if (duration == 0) return 120.0; // Default baseline if clear
 
-  // Distance in cm
-  float distance = duration * 0.034 / 2.0;
+  float distance = duration * 0.034 / 2.0; // Distance in cm
   return distance;
 }
 
@@ -150,35 +135,20 @@ void setup() {
   Serial.println("  SURAKSHA SETU — LIVE HARDWARE TELEMETRY NODE");
   Serial.println("==================================================");
 
-  // Setup Virtual Power Rails (for powering sensors without a breadboard)
-  pinMode(VIRTUAL_VCC_1, OUTPUT);
-  digitalWrite(VIRTUAL_VCC_1, HIGH); // Pin D13 = +3.3V
-  pinMode(VIRTUAL_GND_1, OUTPUT);
-  digitalWrite(VIRTUAL_GND_1, LOW);  // Pin D18 = GND
-  // Setup Virtual Power Rails for Your Exact Wiring (No Breadboard Needed)
+  // Setup Virtual Power Rails for Your Exact Wiring
   pinMode(VIRTUAL_VCC_DHT, OUTPUT);
   digitalWrite(VIRTUAL_VCC_DHT, HIGH); // Pin D13 = +3.3V (DHT22 Positive)
   pinMode(VIRTUAL_GND_DHT, OUTPUT);
   digitalWrite(VIRTUAL_GND_DHT, LOW);  // Pin D12 = GND   (DHT22 Negative)
 
-  pinMode(VIRTUAL_VCC_2, OUTPUT);
-  digitalWrite(VIRTUAL_VCC_2, HIGH); // Pin D4  = +3.3V (ADXL345 VCC)
-  pinMode(VIRTUAL_GND_2, OUTPUT);
-  digitalWrite(VIRTUAL_GND_2, LOW);  // Pin D19 = GND   (ADXL345 GND)
   pinMode(VIRTUAL_VCC_ADXL, OUTPUT);
   digitalWrite(VIRTUAL_VCC_ADXL, HIGH); // Pin D4  = +3.3V (ADXL345 VCC)
   pinMode(VIRTUAL_GND_ADXL, OUTPUT);
   digitalWrite(VIRTUAL_GND_ADXL, LOW);  // Pin D2  = GND   (ADXL345 GND)
 
-  pinMode(VIRTUAL_VCC_3, OUTPUT);
-  digitalWrite(VIRTUAL_VCC_3, HIGH); // Pin D23 = +3.3V (ADXL345 CS pin)
-  pinMode(VIRTUAL_VCC_4, OUTPUT);
-  digitalWrite(VIRTUAL_VCC_4, HIGH); // Pin D5  = +3.3V (Raindrop VCC)
-  pinMode(VIRTUAL_VCC_5, OUTPUT);
-  digitalWrite(VIRTUAL_VCC_5, HIGH); // Pin D15 = +3.3V (Alternative VCC)
   pinMode(VIRTUAL_VCC_RAIN, OUTPUT);
   digitalWrite(VIRTUAL_VCC_RAIN, HIGH); // Pin D5  = +3.3V (Raindrop VCC)
-  delay(100); // Allow sensor power rails to stabilize
+  delay(150); // Allow sensor power rails to stabilize
 
   // Initialize Sensors
   dht.begin();
@@ -202,25 +172,33 @@ void setup() {
 
   if (WiFi.status() == WL_CONNECTED) {
     Serial.println("\n[✔] Wi-Fi Connected!");
-    Serial.print("ESP32 IP Address: ");
+    Serial.print("ESP32 IP: ");
     Serial.println(WiFi.localIP());
   } else {
-    Serial.println("\n[!] Wi-Fi not connected. Check SSID/Password.");
+    Serial.println("\n[!] Wi-Fi not connected yet. Will retry in loop.");
   }
 }
 
 // ======================= 5. MAIN LOOP =======================
 void loop() {
+  // Ensure Wi-Fi connection
+  if (WiFi.status() != WL_CONNECTED) {
+    Serial.println("Reconnecting Wi-Fi...");
+    WiFi.disconnect();
+    WiFi.begin(ssid, password);
+    delay(1000);
+  }
+
   // 1. Read DHT22
   float temp = dht.readTemperature();
   float hum = dht.readHumidity();
-  if (isnan(temp)) temp = 26.5;
-  if (isnan(hum)) hum = 64.0;
+  if (isnan(temp)) temp = 27.5;
+  if (isnan(hum)) hum = 65.0;
 
   // 2. Read HC-SR04 Ultrasonic (Water Distance)
   float waterDist = readUltrasonicDistance();
 
-  // 3. Read ADXL (Tremor / Vibration)
+  // 3. Read ADXL345 (Tremor / Vibration)
   float seismic = readSeismicVector();
 
   // 4. Read Raindrop Sensor (Analog: inverted 0-4095)
@@ -229,13 +207,14 @@ void loop() {
   if (rainLevel < 0) rainLevel = 0;
 
   // 5. Evaluate Emergency Thresholds
+  // Resting tremor is ~0.10 - 0.35 m/s². Shaking easily reaches > 1.0 m/s².
   String status = "Normal Operational Baseline";
   int priority = 1;
 
-  if (seismic > 1.2) { // Shaking / vibration threshold (resting is ~0.1 - 0.3 m/s²)
+  if (seismic > 1.0) {
     status = "🚨 CRITICAL: SEISMIC GROUND TREMOR (ADXL)";
     priority = 4;
-  } else if (waterDist < 15.0) { // Object closer than 15cm = rising water
+  } else if (waterDist < 15.0) {
     status = "🌊 CRITICAL: FLOOD LEVEL RISING (HC-SR04)";
     priority = 4;
   } else if (rainLevel > 60) {
@@ -247,8 +226,9 @@ void loop() {
   Serial.printf("\n--- Telemetry: Temp: %.1f°C | Hum: %.1f%% | Water: %.1fcm | Seismic: %.2f m/s² | Rain: %d%% [%s]\n",
                 temp, hum, waterDist, seismic, rainLevel, status.c_str());
 
-  // 6. Push to Web Dashboard API
+  // 6. Dual-Sync Push: Local Next.js Dashboard + Supabase Cloud
   if (WiFi.status() == WL_CONNECTED) {
+    // 6A. Push to Local Web Dashboard
     HTTPClient http;
     http.begin(server_url);
     http.addHeader("Content-Type", "application/json");
@@ -274,13 +254,44 @@ void loop() {
 
     int httpCode = http.POST(jsonString);
     if (httpCode > 0) {
-      Serial.printf(" [✔] Live Web Dashboard Synced (HTTP %d)\n", httpCode);
+      Serial.printf(" [✔] Local Web Dashboard Synced (HTTP %d)\n", httpCode);
     } else {
       Serial.printf(" [✘] Web Sync Failed: %s\n", http.errorToString(httpCode).c_str());
     }
     http.end();
+
+    // 6B. Push to Supabase Cloud Database (sensor_logs)
+    WiFiClientSecure sClient;
+    sClient.setInsecure(); // Skip TLS cert validation for rapid cloud sync
+    HTTPClient sHttp;
+    if (sHttp.begin(sClient, supabase_url)) {
+      sHttp.addHeader("Content-Type", "application/json");
+      sHttp.addHeader("apikey", supabase_key);
+      sHttp.addHeader("Authorization", String("Bearer ") + supabase_key);
+      sHttp.addHeader("Prefer", "return=minimal");
+
+      StaticJsonDocument<256> supaDoc;
+      supaDoc["node_id"] = "ESP32-NODE-01";
+      supaDoc["temperature"] = temp;
+      supaDoc["humidity"] = hum;
+      supaDoc["water_level"] = waterDist;
+      supaDoc["seismic"] = seismic;
+      supaDoc["rain_level"] = rainLevel;
+      supaDoc["status"] = status;
+
+      String supaJson;
+      serializeJson(supaDoc, supaJson);
+
+      int supaCode = sHttp.POST(supaJson);
+      if (supaCode >= 200 && supaCode < 300) {
+        Serial.printf(" [✔] Supabase Cloud Synced (HTTP %d)\n", supaCode);
+      } else {
+        Serial.printf(" [!] Supabase Sync: HTTP %d (Ensure SQL grants applied)\n", supaCode);
+      }
+      sHttp.end();
+    }
   }
 
-  // Poll every 3 seconds for fast demo response
+  // Poll every 3 seconds for responsive live demo
   delay(3000);
 }
