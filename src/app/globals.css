@@ -729,13 +729,74 @@
             min-height: 85vh;
         }
 
+        .map-container-wrapper {
+            height: 500px;
+            width: 100%;
+            transition: height 0.3s ease;
+        }
+
         @media (max-width: 1024px) {
-            .main-workspace {
-                grid-template-columns: 1fr;
+            .main-workspace,
+            .secondary-workspace {
+                grid-template-columns: 1fr !important;
+                gap: 20px !important;
+                min-height: auto !important;
             }
         }
 
         @media (max-width: 768px) {
+            .header {
+                flex-direction: column !important;
+                align-items: flex-start !important;
+                gap: 14px !important;
+                padding: 14px 16px !important;
+            }
+
+            .header-brand {
+                width: 100% !important;
+            }
+
+            .header-right {
+                width: 100% !important;
+                display: flex !important;
+                justify-content: space-between !important;
+                align-items: center !important;
+                flex-wrap: wrap !important;
+                gap: 10px !important;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr) !important;
+                gap: 12px !important;
+            }
+
+            .stat-card {
+                padding: 14px !important;
+                gap: 10px !important;
+            }
+
+            .stat-card .icon-container {
+                width: 44px !important;
+                height: 44px !important;
+                font-size: 18px !important;
+            }
+
+            .stat-card .value {
+                font-size: 22px !important;
+            }
+
+            .stat-card h3 {
+                font-size: 12px !important;
+            }
+
+            .map-container-wrapper {
+                height: 360px !important;
+            }
+
+            .section {
+                padding: 14px !important;
+            }
+
             .auth-wrapper {
                 max-width: 95%;
                 height: auto;
@@ -1720,4 +1781,33 @@
             font-size: 11px;
             color: var(--color-text-secondary);
             margin-top: 5px;
+        }
+
+        @media (max-width: 480px) {
+            .stats-grid {
+                grid-template-columns: 1fr !important;
+            }
+
+            .header-right {
+                flex-direction: column !important;
+                align-items: stretch !important;
+            }
+
+            .header-right a,
+            .header-right button {
+                width: 100% !important;
+                justify-content: center !important;
+            }
+
+            .map-container-wrapper {
+                height: 290px !important;
+            }
+
+            .container {
+                padding: 6px !important;
+            }
+
+            .stat-card {
+                padding: 12px 14px !important;
+            }
         }

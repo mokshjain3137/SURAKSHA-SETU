@@ -2612,13 +2612,13 @@ export default function Home() {
 
           {/* Header Panel */}
           <div className="header">
-            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-              <div style={{ width: '56px', height: '56px', borderRadius: '50%', background: 'linear-gradient(135deg, #1d4ed8, #3b82f6)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 12px rgba(37,99,235,0.3)' }}>
-                <i className="fas fa-shield-halved" style={{ fontSize: '26px', color: '#ffffff' }}></i>
+            <div className="header-brand" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+              <div style={{ width: '52px', height: '52px', borderRadius: '50%', background: 'linear-gradient(135deg, #1d4ed8, #3b82f6)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 12px rgba(37,99,235,0.3)', flexShrink: 0 }}>
+                <i className="fas fa-shield-halved" style={{ fontSize: '24px', color: '#ffffff' }}></i>
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <h1 style={{ margin: 0, fontSize: '42px', letterSpacing: '1px', lineHeight: '1.2' }}>{t.title}</h1>
-                <span style={{ fontSize: '17px', opacity: 0.9, fontWeight: 'normal' }}>{t.base}</span>
+              <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+                <h1 style={{ margin: 0, fontSize: 'clamp(22px, 4vw, 38px)', letterSpacing: '0.5px', lineHeight: '1.2' }}>{t.title}</h1>
+                <span style={{ fontSize: 'clamp(12px, 2vw, 16px)', opacity: 0.9, fontWeight: 'normal', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t.base}</span>
               </div>
             </div>
             <div className="header-right">
@@ -2694,7 +2694,7 @@ export default function Home() {
                   <span className="status-badge status-pending">{t.live_deployment}</span>
                 </div>
               </div>
-              <div style={{ height: '500px', width: '100%', border: '1px solid #ddd', overflow: 'hidden', borderRadius: '12px' }}>
+              <div className="map-container-wrapper" style={{ width: '100%', border: '1px solid #ddd', overflow: 'hidden', borderRadius: '12px' }}>
                 <MapComponent
                   lat={currentBaseLocation.lat}
                   lng={currentBaseLocation.lng}
@@ -2900,8 +2900,8 @@ export default function Home() {
                     </div>
                   </div>
 
-                  {/* 12-Sensor Telemetry Grid */}
-                  <div style={{ padding: '20px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px' }}>
+                  {/* 5 Real Connected Hardware Sensors Grid */}
+                  <div style={{ padding: '20px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: '16px' }}>
                     
                     {/* 1. Temperature (DHT22) */}
                     <div className={`stat-card hw-card ${sensorData.temperature > 38.0 ? 'danger-alert-card' : ''}`} style={{ padding: '16px 18px', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '14px', margin: 0, height: 'auto', border: '1px solid #e2e8f0' }} id="hwCardTemp">
@@ -2978,114 +2978,6 @@ export default function Home() {
                       </div>
                     </div>
 
-                    {/* 6. Soil Moisture */}
-                    <div className={`stat-card hw-card ${sensorData.soil_moisture > 3000 ? 'danger-alert-card' : ''}`} style={{ padding: '16px 18px', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '14px', margin: 0, height: 'auto', border: '1px solid #e2e8f0' }} id="hwCardSoil">
-                      <div style={{ width: '46px', height: '46px', borderRadius: '10px', background: '#fefce8', color: '#ca8a04', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', flexShrink: 0 }}>
-                        <i className="fas fa-seedling"></i>
-                      </div>
-                      <div style={{ minWidth: 0, flex: 1 }}>
-                        <div style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '2px' }}>
-                          {t.soil} <span style={{ opacity: 0.65, fontWeight: '500' }}>· Probe</span>
-                        </div>
-                        <div style={{ fontSize: '24px', fontWeight: '800', color: '#1e293b', lineHeight: 1.2 }}>
-                          {sensorData.soil_moisture || 2100}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* 7. Barometric Pressure (BMP280) */}
-                    <div className={`stat-card hw-card ${sensorData.baro_pressure < 990.0 ? 'danger-alert-card' : ''}`} style={{ padding: '16px 18px', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '14px', margin: 0, height: 'auto', border: '1px solid #e2e8f0' }} id="hwCardPressure">
-                      <div style={{ width: '46px', height: '46px', borderRadius: '10px', background: '#faf5ff', color: '#9333ea', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', flexShrink: 0 }}>
-                        <i className="fas fa-gauge-high"></i>
-                      </div>
-                      <div style={{ minWidth: 0, flex: 1 }}>
-                        <div style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '2px' }}>
-                          {t.pressure || 'Pressure'} <span style={{ opacity: 0.65, fontWeight: '500' }}>· BMP280</span>
-                        </div>
-                        <div style={{ fontSize: '24px', fontWeight: '800', color: '#1e293b', lineHeight: 1.2 }}>
-                          {Number(sensorData.baro_pressure || 1011.5).toFixed(1)}<span style={{ fontSize: '13px', fontWeight: '600', color: '#64748b', marginLeft: '3px' }}>hPa</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* 8. Altitude (BMP280) */}
-                    <div className="stat-card hw-card" style={{ padding: '16px 18px', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '14px', margin: 0, height: 'auto', border: '1px solid #e2e8f0' }} id="hwCardAltitude">
-                      <div style={{ width: '46px', height: '46px', borderRadius: '10px', background: '#f5f3ff', color: '#7c3aed', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', flexShrink: 0 }}>
-                        <i className="fas fa-mountain"></i>
-                      </div>
-                      <div style={{ minWidth: 0, flex: 1 }}>
-                        <div style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '2px' }}>
-                          {t.altitude || 'Altitude'} <span style={{ opacity: 0.65, fontWeight: '500' }}>· BMP280</span>
-                        </div>
-                        <div style={{ fontSize: '24px', fontWeight: '800', color: '#1e293b', lineHeight: 1.2 }}>
-                          {Number(sensorData.altitude || 770.0).toFixed(0)}<span style={{ fontSize: '14px', fontWeight: '600', color: '#64748b', marginLeft: '3px' }}>m</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* 9. Air Quality (MQ-2) */}
-                    <div className={`stat-card hw-card ${sensorData.air_quality > 1000 ? 'danger-alert-card' : ''}`} style={{ padding: '16px 18px', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '14px', margin: 0, height: 'auto', border: '1px solid #e2e8f0' }} id="hwCardAir">
-                      <div style={{ width: '46px', height: '46px', borderRadius: '10px', background: '#fff7ed', color: '#ea580c', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', flexShrink: 0 }}>
-                        <i className="fas fa-wind"></i>
-                      </div>
-                      <div style={{ minWidth: 0, flex: 1 }}>
-                        <div style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '2px' }}>
-                          {t.air || 'Air Quality'} <span style={{ opacity: 0.65, fontWeight: '500' }}>· MQ-2</span>
-                        </div>
-                        <div style={{ fontSize: '24px', fontWeight: '800', color: '#1e293b', lineHeight: 1.2 }}>
-                          {sensorData.air_quality || 180}<span style={{ fontSize: '12px', fontWeight: '600', color: '#64748b', marginLeft: '3px' }}>PPM</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* 10. Wind Speed */}
-                    <div className={`stat-card hw-card ${sensorData.wind_speed > 60.0 ? 'danger-alert-card' : ''}`} style={{ padding: '16px 18px', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '14px', margin: 0, height: 'auto', border: '1px solid #e2e8f0' }} id="hwCardWindSpeed">
-                      <div style={{ width: '46px', height: '46px', borderRadius: '10px', background: '#f0fdfa', color: '#0d9488', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', flexShrink: 0 }}>
-                        <i className="fas fa-fan"></i>
-                      </div>
-                      <div style={{ minWidth: 0, flex: 1 }}>
-                        <div style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '2px' }}>
-                          {t.windSpeed || 'Wind Speed'}
-                        </div>
-                        <div style={{ fontSize: '24px', fontWeight: '800', color: '#1e293b', lineHeight: 1.2 }}>
-                          {Number(sensorData.wind_speed || 12.5).toFixed(1)}<span style={{ fontSize: '13px', fontWeight: '600', color: '#64748b', marginLeft: '3px' }}>km/h</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* 11. Wind Direction */}
-                    <div className="stat-card hw-card" style={{ padding: '16px 18px', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '14px', margin: 0, height: 'auto', border: '1px solid #e2e8f0' }} id="hwCardWindDir">
-                      <div style={{ width: '46px', height: '46px', borderRadius: '10px', background: '#f8fafc', color: '#475569', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', flexShrink: 0 }}>
-                        <i className="fas fa-compass"></i>
-                      </div>
-                      <div style={{ minWidth: 0, flex: 1 }}>
-                        <div style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '2px' }}>
-                          {t.windDir || 'Wind Dir'}
-                        </div>
-                        <div style={{ fontSize: '24px', fontWeight: '800', color: '#1e293b', lineHeight: 1.2 }}>
-                          {sensorData.wind_direction || 190}°
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* 12. LoRa Gateway (ESP32) */}
-                    <div className="stat-card hw-card" style={{ padding: '16px 18px', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '14px', margin: 0, height: 'auto', background: '#f0fdf4', border: '1px solid #86efac' }} id="hwCardLora">
-                      <div style={{ width: '46px', height: '46px', borderRadius: '10px', background: '#dcfce7', color: '#15803d', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', flexShrink: 0 }}>
-                        <i className="fas fa-tower-broadcast"></i>
-                      </div>
-                      <div style={{ minWidth: 0, flex: 1 }}>
-                        <div style={{ fontSize: '11px', fontWeight: '700', color: '#15803d', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '2px' }}>
-                          LoRa &amp; Cloud Gateway
-                        </div>
-                        <div style={{ fontSize: '18px', fontWeight: '800', color: '#166534', lineHeight: 1.2 }}>
-                          {sensorData.lora_node || 'ESP32-NODE-01'}
-                        </div>
-                        <div style={{ fontSize: '11px', fontWeight: '600', color: '#15803d', marginTop: '2px' }}>
-                          RSSI: {sensorData.lora_rssi || -62} dBm
-                        </div>
-                      </div>
-                    </div>
-
                   </div>
                   <div style={{ padding: '0 15px 15px', fontSize: '10px', color: '#666', textAlign: 'right' }}>
                     {t.last_sync || 'Last Sync'}: {new Date(sensorData.created_at).toLocaleTimeString()}
@@ -3120,7 +3012,7 @@ export default function Home() {
             </div>
 
             {/* Secondary Workspace for SMS, Volunteers, and AI Panel */}
-            <div className="main-workspace" style={{ minHeight: 'auto', marginBottom: '24px', gridTemplateColumns: '2fr 1fr' }}>
+            <div className="main-workspace secondary-workspace" style={{ minHeight: 'auto', marginBottom: '24px' }}>
 
               {/* Left Column: Live SMS Requests and Volunteers */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
