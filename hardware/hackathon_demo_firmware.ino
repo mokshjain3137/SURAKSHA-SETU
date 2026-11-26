@@ -22,7 +22,7 @@ const char* ssid     = "Realme15pro";       // Mobile Hotspot SSID
 const char* password = "Rishith2007";       // Mobile Hotspot Password
 
 // Laptop Local Server Telemetry Endpoint (Your exact Laptop Wi-Fi IP on port 3000)
-const char* server_url = "http://10.208.78.150:3000/api/telemetry";
+const char* server_url = "http://10.252.37.150:3000/api/telemetry";
 
 // Cloud Backup: Supabase REST API Credentials
 const char* supabase_url = "https://roypndzefjunimxzvcnf.supabase.co/rest/v1/sensor_logs";
@@ -50,6 +50,15 @@ DHT dht(DHTPIN, DHTTYPE);
 #define ADXL345_ADDR 0x53
 bool adxl_found = false;
 
+// ======================= 2B. VIRTUAL POWER PINS (NO BREADBOARD NEEDED) =======================
+// IMPORTANT: Avoid strapping pins (D12, D15, D2) so uploading firmware never conflicts with the internal flash chip!
+#define VIRTUAL_VCC_1  13  // Pin D13 -> Outputs +3.3V (e.g. DHT22 VCC)
+#define VIRTUAL_GND_1  18  // Pin D18 -> Outputs 0V    (e.g. DHT22 GND - 100% Safe, non-strapping)
+#define VIRTUAL_VCC_2  4   // Pin D4  -> Outputs +3.3V (Used by ADXL345 VCC)
+#define VIRTUAL_GND_2  19  // Pin D19 -> Outputs 0V    (Used by ADXL345 GND - 100% Safe, non-strapping)
+#define VIRTUAL_VCC_3  23  // Pin D23 -> Outputs +3.3V (Plug ADXL345 CS into D23! - 100% Safe, non-strapping)
+#define VIRTUAL_VCC_4  5   // Pin D5  -> Outputs +3.3V (Recommended for Raindrop VCC)
+#define VIRTUAL_VCC_5  15  // Pin D15 -> Outputs +3.3V (Alternative 3.3V power pin)
 // ======================= 2B. VIRTUAL POWER PINS (YOUR EXACT WIRING) =======================
 #define VIRTUAL_VCC_DHT   13  // Pin D13 -> Outputs +3.3V (DHT22 Positive)
 #define VIRTUAL_GND_DHT   12  // Pin D12 -> Outputs 0V    (DHT22 Negative)
@@ -141,17 +150,32 @@ void setup() {
   Serial.println("  SURAKSHA SETU — LIVE HARDWARE TELEMETRY NODE");
   Serial.println("==================================================");
 
+  // Setup Virtual Power Rails (for powering sensors without a breadboard)
+  pinMode(VIRTUAL_VCC_1, OUTPUT);
+  digitalWrite(VIRTUAL_VCC_1, HIGH); // Pin D13 = +3.3V
+  pinMode(VIRTUAL_GND_1, OUTPUT);
+  digitalWrite(VIRTUAL_GND_1, LOW);  // Pin D18 = GND
   // Setup Virtual Power Rails for Your Exact Wiring (No Breadboard Needed)
   pinMode(VIRTUAL_VCC_DHT, OUTPUT);
   digitalWrite(VIRTUAL_VCC_DHT, HIGH); // Pin D13 = +3.3V (DHT22 Positive)
   pinMode(VIRTUAL_GND_DHT, OUTPUT);
   digitalWrite(VIRTUAL_GND_DHT, LOW);  // Pin D12 = GND   (DHT22 Negative)
 
+  pinMode(VIRTUAL_VCC_2, OUTPUT);
+  digitalWrite(VIRTUAL_VCC_2, HIGH); // Pin D4  = +3.3V (ADXL345 VCC)
+  pinMode(VIRTUAL_GND_2, OUTPUT);
+  digitalWrite(VIRTUAL_GND_2, LOW);  // Pin D19 = GND   (ADXL345 GND)
   pinMode(VIRTUAL_VCC_ADXL, OUTPUT);
   digitalWrite(VIRTUAL_VCC_ADXL, HIGH); // Pin D4  = +3.3V (ADXL345 VCC)
   pinMode(VIRTUAL_GND_ADXL, OUTPUT);
   digitalWrite(VIRTUAL_GND_ADXL, LOW);  // Pin D2  = GND   (ADXL345 GND)
 
+  pinMode(VIRTUAL_VCC_3, OUTPUT);
+  digitalWrite(VIRTUAL_VCC_3, HIGH); // Pin D23 = +3.3V (ADXL345 CS pin)
+  pinMode(VIRTUAL_VCC_4, OUTPUT);
+  digitalWrite(VIRTUAL_VCC_4, HIGH); // Pin D5  = +3.3V (Raindrop VCC)
+  pinMode(VIRTUAL_VCC_5, OUTPUT);
+  digitalWrite(VIRTUAL_VCC_5, HIGH); // Pin D15 = +3.3V (Alternative VCC)
   pinMode(VIRTUAL_VCC_RAIN, OUTPUT);
   digitalWrite(VIRTUAL_VCC_RAIN, HIGH); // Pin D5  = +3.3V (Raindrop VCC)
   delay(100); // Allow sensor power rails to stabilize
@@ -208,7 +232,7 @@ void loop() {
   String status = "Normal Operational Baseline";
   int priority = 1;
 
-  if (seismic > 5.0) {
+  if (seismic > 1.2) { // Shaking / vibration threshold (resting is ~0.1 - 0.3 m/s²)
     status = "🚨 CRITICAL: SEISMIC GROUND TREMOR (ADXL)";
     priority = 4;
   } else if (waterDist < 15.0) { // Object closer than 15cm = rising water
