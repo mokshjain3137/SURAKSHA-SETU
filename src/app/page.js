@@ -793,11 +793,30 @@ export default function Home() {
     fetchWeather(currentBaseLocation.lat, currentBaseLocation.lng);
   }, [currentBaseLocation, lang]);
 
-  // 2. Live Hardware Data Polling (Direct Supabase REST API stream, with /api/telemetry fallback)
+  // 2. High-Speed Live Telemetry Polling (Sub-second local stream + Cloud fallback)
   useEffect(() => {
     let active = true;
     const fetchSensorData = async () => {
-      // 1. Fetch live telemetry directly from Supabase Cloud (where ESP32 hardware actively streams)
+      // 1. Fast local telemetry endpoint (sub-millisecond when ESP32 streams locally)
+      try {
+        const localRes = await fetch('/api/telemetry', { cache: 'no-store' });
+        if (localRes.ok) {
+          const telemetryData = await localRes.json();
+          if (telemetryData && (telemetryData.temperature !== undefined || telemetryData.created_at)) {
+            if (!active) return;
+            setSensorData(prev => ({
+              ...prev,
+              ...telemetryData,
+              status: telemetryData.status || "Live Hardware Sync"
+            }));
+            return;
+          }
+        }
+      } catch (e) {
+        // Fall back to Supabase
+      }
+
+      // 2. Fall back to Supabase Cloud if local feed is offline
       try {
         const configResponse = await fetch('/api/config');
         if (configResponse.ok) {
@@ -829,21 +848,6 @@ export default function Home() {
           }
         }
       } catch (err) {
-        // Fall back to /api/telemetry
-      }
-
-      // 2. Fall back to /api/telemetry endpoint
-      try {
-        const localRes = await fetch('/api/telemetry', { cache: 'no-store' });
-        if (localRes.ok) {
-          const telemetryData = await localRes.json();
-          if (telemetryData && (telemetryData.temperature !== undefined || telemetryData.created_at)) {
-            if (!active) return;
-            setSensorData(prev => ({ ...prev, ...telemetryData }));
-            return;
-          }
-        }
-      } catch (e) {
         // Suppress
       }
     };
@@ -851,8 +855,8 @@ export default function Home() {
     // Fetch immediately on mount
     fetchSensorData();
 
-    // Then poll every 3 seconds for responsive live hardware updates
-    const interval = setInterval(fetchSensorData, 3000);
+    // Poll every 800ms for ultra-responsive, real-time live hardware streaming
+    const interval = setInterval(fetchSensorData, 800);
 
     return () => {
       active = false;

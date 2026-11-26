@@ -36,6 +36,10 @@ const char* supabase_key = "sb_publishable_5iAQUFhXBsQ45dwbTO-qCA_QET1wAkV";
 const char* telegram_bot_token = "8683344314:AAETE34zer-DgxDcDqa56Vi_sJ8MQeCSRQc";
 const char* telegram_chat_id   = "7988893018";
 
+// High-speed non-blocking cloud timer
+unsigned long lastCloudSyncTime = 0;
+const unsigned long CLOUD_SYNC_INTERVAL = 5000; // Cloud backup every 5 seconds (local sync runs every 500ms)
+
 // ======================= 2. SENSOR & POWER PIN DEFINITIONS =======================
 // DHT22 (Temperature & Humidity)
 #define DHTPIN 14          // Pin D14 (Data OUT)
@@ -226,10 +230,11 @@ void loop() {
   Serial.printf("\n--- Telemetry: Temp: %.1f°C | Hum: %.1f%% | Water: %.1fcm | Seismic: %.2f m/s² | Rain: %d%% [%s]\n",
                 temp, hum, waterDist, seismic, rainLevel, status.c_str());
 
-  // 6. Dual-Sync Push: Local Next.js Dashboard + Supabase Cloud
+  // 6. Dual-Sync Push: Lightning-Fast Local Web + Background Cloud Sync
   if (WiFi.status() == WL_CONNECTED) {
-    // 6A. Push to Local Web Dashboard
+    // 6A. Push to Local Web Dashboard (Fast HTTP: ~15ms, zero TLS delay)
     HTTPClient http;
+    http.setTimeout(400); // 400ms max timeout
     http.begin(server_url);
     http.addHeader("Content-Type", "application/json");
 
@@ -239,14 +244,6 @@ void loop() {
     doc["water_level"] = waterDist;
     doc["seismic"] = seismic;
     doc["rain_level"] = rainLevel;
-    doc["soil_moisture"] = 2100;
-    doc["baro_pressure"] = 1011.5;
-    doc["altitude"] = 770.0;
-    doc["air_quality"] = 180;
-    doc["wind_speed"] = 12.5;
-    doc["wind_direction"] = 190;
-    doc["lora_node"] = "ESP32-NODE-01";
-    doc["lora_rssi"] = -62;
     doc["status"] = status;
 
     String jsonString;
@@ -254,49 +251,50 @@ void loop() {
 
     int httpCode = http.POST(jsonString);
     if (httpCode > 0) {
-      Serial.printf(" [✔] Local Web Dashboard Synced (HTTP %d)\n", httpCode);
+      Serial.printf(" [✔] Local Web Synced (HTTP %d)\n", httpCode);
     } else {
-      Serial.printf(" [✘] Web Sync Failed: %s\n", http.errorToString(httpCode).c_str());
+      Serial.printf(" [✘] Web Sync: %s\n", http.errorToString(httpCode).c_str());
     }
     http.end();
 
     // 6B. Push to Supabase Cloud Database (sensor_logs)
-    WiFiClientSecure sClient;
-    sClient.setInsecure(); // Skip TLS cert validation for rapid cloud sync
-    HTTPClient sHttp;
-    if (sHttp.begin(sClient, supabase_url)) {
-      sHttp.addHeader("Content-Type", "application/json");
-      sHttp.addHeader("apikey", supabase_key);
-      sHttp.addHeader("Authorization", String("Bearer ") + supabase_key);
-      sHttp.addHeader("Prefer", "return=minimal");
+    // Run TLS handshake ONLY on critical alarm OR every 5 seconds (eliminates 6-second TLS freeze on every loop)
+    unsigned long now = millis();
+    bool isCriticalAlarm = (priority >= 3);
+    if (isCriticalAlarm || (now - lastCloudSyncTime >= CLOUD_SYNC_INTERVAL)) {
+      lastCloudSyncTime = now;
+      WiFiClientSecure sClient;
+      sClient.setInsecure(); // Skip TLS cert validation for rapid cloud sync
+      HTTPClient sHttp;
+      sHttp.setTimeout(1200);
+      if (sHttp.begin(sClient, supabase_url)) {
+        sHttp.addHeader("Content-Type", "application/json");
+        sHttp.addHeader("apikey", supabase_key);
+        sHttp.addHeader("Authorization", String("Bearer ") + supabase_key);
+        sHttp.addHeader("Prefer", "return=minimal");
 
-      StaticJsonDocument<384> supaDoc;
-      supaDoc["temperature"] = temp;
-      supaDoc["humidity"] = hum;
-      supaDoc["water_level"] = waterDist;
-      supaDoc["seismic"] = seismic;
-      supaDoc["rain_level"] = rainLevel;
-      supaDoc["soil_moisture"] = 2100;
-      supaDoc["baro_pressure"] = 1011.5;
-      supaDoc["altitude"] = 770.0;
-      supaDoc["air_quality"] = 180;
-      supaDoc["wind_speed"] = 12.5;
-      supaDoc["wind_direction"] = 190;
-      supaDoc["status"] = status;
+        StaticJsonDocument<384> supaDoc;
+        supaDoc["temperature"] = temp;
+        supaDoc["humidity"] = hum;
+        supaDoc["water_level"] = waterDist;
+        supaDoc["seismic"] = seismic;
+        supaDoc["rain_level"] = rainLevel;
+        supaDoc["status"] = status;
 
-      String supaJson;
-      serializeJson(supaDoc, supaJson);
+        String supaJson;
+        serializeJson(supaDoc, supaJson);
 
-      int supaCode = sHttp.POST(supaJson);
-      if (supaCode >= 200 && supaCode < 300) {
-        Serial.printf(" [✔] Supabase Cloud Synced (HTTP %d)\n", supaCode);
-      } else {
-        Serial.printf(" [!] Supabase Sync: HTTP %d (Ensure SQL grants applied)\n", supaCode);
+        int supaCode = sHttp.POST(supaJson);
+        if (supaCode >= 200 && supaCode < 300) {
+          Serial.printf(" [✔] Supabase Cloud Synced (HTTP %d)\n", supaCode);
+        } else {
+          Serial.printf(" [!] Supabase Sync: HTTP %d\n", supaCode);
+        }
+        sHttp.end();
       }
-      sHttp.end();
     }
   }
 
-  // Poll every 3 seconds for responsive live demo
-  delay(3000);
+  // Ultra-fast streaming loop delay: 500ms for instantaneous live sensor responsiveness
+  delay(500);
 }
